@@ -13,14 +13,59 @@
             --danger: #FF3B30;
             --light: #F8F9FA;
             --border: #E9ECEF;
+            --sidebar-width: 250px;
         }
-        body { background-color: #F5F5F7; font-family: -apple-system, sans-serif; }
-        .app-container { max-width: 1200px; margin: 20px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .calendar-day { height: 100px; padding: 8px; border: 1px solid var(--border); cursor: pointer; position: relative; }
+        body { 
+            background-color: #F5F5F7; 
+            font-family: -apple-system, sans-serif; 
+            min-height: 100vh;
+        }
+        .app-container { 
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            background-color: #F5F5F7;
+        }
+        .calendar-container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            padding: 20px;
+        }
+        .calendar-day { 
+            height: 100px; 
+            padding: 8px; 
+            border: 1px solid var(--border); 
+            cursor: pointer; 
+            position: relative; 
+        }
         .calendar-day:hover { background-color: rgba(0, 122, 255, 0.05); }
         .calendar-day.today { background-color: rgba(0, 122, 255, 0.1); }
         .calendar-day.selected { background-color: rgba(0, 122, 255, 0.15); border-color: var(--primary); }
-        .calendar-day.has-tasks::after { content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background-color: var(--primary); }
+        .calendar-day.has-tasks::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: 8px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 6px; 
+            height: 6px; 
+            border-radius: 50%; 
+            background-color: var(--primary); 
+        }
         .task-item { border-left: 3px solid var(--primary); transition: all 0.2s; }
         .task-item.completed { border-left-color: var(--success); opacity: 0.8; }
         .task-priority { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -30,7 +75,118 @@
         .history-change-old { color: #dc3545; text-decoration: line-through; }
         .history-change-new { color: #28a745; }
         .login-container { max-width: 400px; margin: 50px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        @media (max-width: 768px) { .calendar-day { height: 70px; } }
+        .profile-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 30px;
+            color: #6c757d;
+            cursor: pointer;
+        }
+        .profile-pic img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .nav-link {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: var(--primary);
+        }
+        .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        .logout-btn {
+            margin-top: auto;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: #dc3545;
+            cursor: pointer;
+        }
+        .logout-btn:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        @media (max-width: 992px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .nav-links {
+                display: flex;
+                overflow-x: auto;
+            }
+            .nav-link {
+                white-space: nowrap;
+            }
+            .logout-btn {
+                margin-top: 20px;
+                margin-left: auto;
+            }
+        }
+        @media (max-width: 768px) { 
+            .calendar-day { height: 70px; } 
+        }
+        #profile-modal .modal-dialog {
+            max-width: 500px;
+        }
+        #profile-picture-input {
+            display: none;
+        }
+        .task-history-item {
+            border-left: 3px solid #e9ecef;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        .task-history-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .all-tasks-container {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .task-date-group {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .task-date-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .page-content {
+            /* display: none; */
+        }
+        .page-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -52,54 +208,161 @@
 
     <!-- Main App (hidden initially) -->
     <div id="app-container" class="app-container d-none">
-        <div class="row g-0">
-            <div class="col-lg-8 p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="mb-0" id="current-month"></h2>
-                    <div>
-                        <button class="btn btn-outline-secondary btn-sm me-2" id="prev-month"><i class="fas fa-chevron-left"></i></button>
-                        <button class="btn btn-outline-primary btn-sm me-2" id="today-btn">Today</button>
-                        <button class="btn btn-outline-secondary btn-sm" id="next-month"><i class="fas fa-chevron-right"></i></button>
-                        <button class="btn btn-outline-danger btn-sm ms-2" id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
-                    </div>
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="profile-section">
+                <div class="profile-pic" id="profile-pic-container">
+                    <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
+                    <img id="profile-pic-image" class="d-none" src="" alt="Profile">
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="calendar">
-                        <thead><tr class="text-center"><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
-                        <tbody id="calendar-body"></tbody>
-                    </table>
+                <h5 id="profile-name">User Name</h5>
+                <p class="text-muted small" id="profile-email">user@example.com</p>
+                <button class="btn btn-sm btn-outline-primary mt-2" id="edit-profile-btn">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+            </div>
+            
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-page="calendar">
+                    <i class="fas fa-calendar"></i> Calendar
+                </a>
+                <a href="#" class="nav-link" data-page="tasks">
+                    <i class="fas fa-tasks"></i> All Tasks
+                </a>
+                <a href="#" class="nav-link" data-page="profile">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </div>
+            
+            <div class="logout-btn" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Calendar Page (default) -->
+            <div id="calendar-page" class="page-content">
+                <div class="calendar-container">
+                    <div class="row g-0">
+                        <div class="col-lg-8 p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2 class="mb-0" id="current-month"></h2>
+                                <div>
+                                    <button class="btn btn-outline-secondary btn-sm me-2" id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                                    <button class="btn btn-outline-primary btn-sm me-2" id="today-btn">Today</button>
+                                    <button class="btn btn-outline-secondary btn-sm" id="next-month"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="calendar">
+                                    <thead><tr class="text-center"><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+                                    <tbody id="calendar-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 bg-light p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0" id="tasks-date">Tasks</h4>
+                                <button class="btn btn-primary btn-sm" id="add-task-btn"><i class="fas fa-plus me-1"></i> Add Task</button>
+                            </div>
+                            <div id="tasks-container">
+                                <div class="alert alert-info" id="no-tasks-message">No tasks for selected date. Click "Add Task" to create one.</div>
+                                <ul class="list-unstyled" id="tasks-list"></ul>
+                            </div>
+                            <div class="mt-4 d-none" id="task-details">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0" id="task-detail-title">Task Details</h5>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-secondary me-1" id="edit-task-btn"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger" id="delete-task-btn"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <span class="badge bg-success me-2" id="task-status-badge">Pending</span>
+                                            <span class="text-muted" id="task-time">Today, 2:00 PM</span>
+                                        </div>
+                                        <p id="task-description">No description provided.</p>
+                                        <div class="task-history mt-4">
+                                            <h6><i class="fas fa-history me-2"></i>Task History</h6>
+                                            <div class="mt-2" id="history-list"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-4 bg-light p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="mb-0" id="tasks-date">Tasks</h4>
-                    <button class="btn btn-primary btn-sm" id="add-task-btn"><i class="fas fa-plus me-1"></i> Add Task</button>
-                </div>
-                <div id="tasks-container">
-                    <div class="alert alert-info" id="no-tasks-message">No tasks for selected date. Click "Add Task" to create one.</div>
-                    <ul class="list-unstyled" id="tasks-list"></ul>
-                </div>
-                <div class="mt-4 d-none" id="task-details">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0" id="task-detail-title">Task Details</h5>
-                            <div>
-                                <button class="btn btn-sm btn-outline-secondary me-1" id="edit-task-btn"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-outline-danger" id="delete-task-btn"><i class="fas fa-trash"></i></button>
+
+            <!-- Profile Page (hidden initially) -->
+            <div id="profile-page" class="page-content d-none">
+                <div class="calendar-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">Profile Settings</h2>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="profile-pic mb-3" id="profile-pic-preview" style="width: 150px; height: 150px; margin: 0 auto;">
+                                <div id="profile-pic-preview-initial"><i class="fas fa-user" style="font-size: 60px;"></i></div>
+                                <img id="profile-pic-preview-image" class="d-none" src="" alt="Profile" style="width: 100%; height: 100%;">
                             </div>
+                            <input type="file" id="profile-picture-input" accept="image/*">
+                            <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
+                                <i class="fas fa-camera"></i> Change Photo
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <span class="badge bg-success me-2" id="task-status-badge">Pending</span>
-                                <span class="text-muted" id="task-time">Today, 2:00 PM</span>
-                            </div>
-                            <p id="task-description">No description provided.</p>
-                            <div class="task-history mt-4">
-                                <h6><i class="fas fa-history me-2"></i>Task History</h6>
-                                <div class="mt-2" id="history-list"></div>
-                            </div>
+                        <div class="col-md-8">
+                            <form id="profile-form">
+                                <div class="mb-3">
+                                    <label for="profile-name-input" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="profile-name-input" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="profile-email-input" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="profile-email-input" disabled>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profile-gender" class="form-label">Gender</label>
+                                        <select class="form-select" id="profile-gender">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                            <option value="prefer-not-to-say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="profile-phone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="profile-phone">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-secondary me-2" id="cancel-profile-btn">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div id="tasks-page" class="page-content">
+                <div class="calendar-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">All Tasks</h2>
+                        <button class="btn btn-primary btn-sm" id="add-task-global-btn">
+                            <i class="fas fa-plus me-1"></i> Add Task
+                        </button>
+                    </div>
+                    <div class="all-tasks-container" id="all-tasks-container"></div>
                 </div>
             </div>
         </div>
@@ -162,7 +425,8 @@
             getAuth, 
             signInWithEmailAndPassword, 
             signOut,
-            onAuthStateChanged
+            onAuthStateChanged,
+            updateProfile
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { 
             getFirestore, 
@@ -175,6 +439,12 @@
             deleteDoc,
             onSnapshot
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { 
+            getStorage,
+            ref,
+            uploadBytes,
+            getDownloadURL
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         // Firebase configuration
         const firebaseConfig = {
@@ -191,6 +461,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         // Calendar app logic
         $(() => {
@@ -198,14 +469,22 @@
             let currentDate = new Date(), selectedDate = new Date(), selectedTask = null;
             let tasks = {};
             let currentUser = null;
+            let userProfileData = {};
             const taskModal = new bootstrap.Modal('#taskModal');
 
             // Auth state listener
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     currentUser = user;
                     $('#login-section').addClass('d-none');
                     $('#app-container').removeClass('d-none');
+                    
+                    // Load user profile data
+                    await loadUserProfile();
+                    
+                    // Update profile section
+                    updateProfileDisplay();
+                    
                     loadUserTasks();
                     // Clear login form
                     $('#login-form')[0].reset();
@@ -218,6 +497,108 @@
                     selectedTask = null;
                 }
             });
+
+            // Load user profile data from Firestore
+            const loadUserProfile = async () => {
+                if (!currentUser) return;
+                
+                const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
+                try {
+                    const docSnap = await getDoc(profileRef);
+                    if (docSnap.exists()) {
+                        userProfileData = docSnap.data();
+                    } else {
+                        // Initialize with default values
+                        userProfileData = {
+                            name: currentUser.displayName || '',
+                            email: currentUser.email,
+                            gender: '',
+                            phone: '',
+                            photoURL: currentUser.photoURL || ''
+                        };
+                        await setDoc(profileRef, userProfileData);
+                    }
+                } catch (error) {
+                    console.error("Error loading profile:", error);
+                }
+            };
+
+            // Save user profile to Firestore
+            const saveUserProfile = async () => {
+                if (!currentUser) return;
+                
+                const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
+                try {
+                    await updateDoc(profileRef, userProfileData);
+                    
+                    // Update auth profile if name or photo changed
+                    if (userProfileData.name || userProfileData.photoURL) {
+                        await updateProfile(currentUser, {
+                            displayName: userProfileData.name,
+                            photoURL: userProfileData.photoURL
+                        });
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error saving profile:", error);
+                    return false;
+                }
+            };
+
+            // Update profile display in sidebar and profile page
+            const updateProfileDisplay = () => {
+                if (!currentUser) return;
+                
+                // Update sidebar
+                $('#profile-name').text(userProfileData.name || 'User Name');
+                $('#profile-email').text(userProfileData.email || 'user@example.com');
+                
+                // Update profile picture
+                const profilePicInitial = $('#profile-pic-initial');
+                const profilePicImage = $('#profile-pic-image');
+                
+                if (userProfileData.photoURL) {
+                    profilePicInitial.addClass('d-none');
+                    profilePicImage.removeClass('d-none').attr('src', userProfileData.photoURL);
+                } else {
+                    profilePicInitial.removeClass('d-none').text(userProfileData.name ? userProfileData.name.charAt(0).toUpperCase() : 'U');
+                    profilePicImage.addClass('d-none');
+                }
+                
+                // Update profile page fields
+                $('#profile-name-input').val(userProfileData.name || '');
+                $('#profile-email-input').val(userProfileData.email || '');
+                $('#profile-gender').val(userProfileData.gender || '');
+                $('#profile-phone').val(userProfileData.phone || '');
+                
+                // Update profile preview
+                const previewInitial = $('#profile-pic-preview-initial');
+                const previewImage = $('#profile-pic-preview-image');
+                
+                if (userProfileData.photoURL) {
+                    previewInitial.addClass('d-none');
+                    previewImage.removeClass('d-none').attr('src', userProfileData.photoURL);
+                } else {
+                    previewInitial.removeClass('d-none').text(userProfileData.name ? userProfileData.name.charAt(0).toUpperCase() : 'U');
+                    previewImage.addClass('d-none');
+                }
+            };
+
+            // Upload profile picture to storage
+            const uploadProfilePicture = async (file) => {
+                if (!currentUser) return null;
+                
+                try {
+                    const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+                    await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    return downloadURL;
+                } catch (error) {
+                    console.error("Error uploading profile picture:", error);
+                    return null;
+                }
+            };
 
             // Login form handler - refreshes page on success
             $('#login-form').submit(async (e) => {
@@ -371,6 +752,14 @@
                 $('#task-details').removeClass('d-none');
             };
             
+            // Navigation between pages
+            const showPage = (pageId) => {
+                $('.page-content').addClass('d-none');
+                $(`#${pageId}`).removeClass('d-none');
+                $('.nav-link').removeClass('active');
+                $(`.nav-link[data-page="${pageId.replace('-page', '')}"]`).addClass('active');
+            };
+
             // Event handlers
             $('#add-task-btn').click(() => {
                 $('#modalTitle').text('Add New Task');
@@ -472,7 +861,336 @@
                 selectedTask = null;
                 renderCalendar();
             });
+
+            // Navigation link click handler
+            $(document).on('click', '.nav-link', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                showPage(`${page}-page`);
+            });
+
+            // Edit profile button click handler
+            $('#edit-profile-btn').click(() => {
+                showPage('profile-page');
+            });
+
+            // Cancel profile edit button
+            $('#cancel-profile-btn').click(() => {
+                showPage('calendar-page');
+            });
+
+            // Change profile picture button
+            $('#change-profile-pic-btn').click(() => {
+                $('#profile-picture-input').click();
+            });
+
+            // Profile picture file input change
+            $('#profile-picture-input').change(async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    // Show loading state
+                    $('#change-profile-pic-btn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+                    
+                    // Upload the file
+                    const downloadURL = await uploadProfilePicture(file);
+                    if (downloadURL) {
+                        userProfileData.photoURL = downloadURL;
+                        updateProfileDisplay();
+                    }
+                } catch (error) {
+                    console.error("Error uploading profile picture:", error);
+                    alert('Failed to upload profile picture');
+                } finally {
+                    $('#change-profile-pic-btn').html('<i class="fas fa-camera"></i> Change Photo');
+                }
+            });
+
+            // Save profile form
+            $('#profile-form').submit(async function(e) {
+                e.preventDefault();
+                
+                // Update userProfileData
+                userProfileData.name = $('#profile-name-input').val();
+                userProfileData.gender = $('#profile-gender').val();
+                userProfileData.phone = $('#profile-phone').val();
+                
+                try {
+                    // Show loading state
+                    $('#save-profile-btn').html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+                    
+                    // Save to Firestore
+                    const success = await saveUserProfile();
+                    if (success) {
+                        updateProfileDisplay();
+                        showPage('calendar-page');
+                        alert('Profile updated successfully!');
+                    }
+                } catch (error) {
+                    console.error("Error saving profile:", error);
+                    alert('Failed to save profile');
+                } finally {
+                    $('#save-profile-btn').html('Save Changes');
+                }
+            });
+
+             // Function to render all tasks
+        const renderAllTasks = () => {
+            if (!currentUser || !tasks) {
+                $('#no-tasks-message-all').removeClass('d-none');
+                return;
+            }
+
+            const container = $('#all-tasks-container');
+            container.empty();
+
+            // Get all dates with tasks and sort them
+            const taskDates = Object.keys(tasks).sort((a, b) => new Date(b) - new Date(a));
+
+            if (taskDates.length === 0) {
+                $('#no-tasks-message-all').removeClass('d-none');
+                return;
+            }
+
+            $('#no-tasks-message-all').addClass('d-none');
+
+            taskDates.forEach(date => {
+                const dateTasks = tasks[date];
+                if (!dateTasks || dateTasks.length === 0) return;
+
+                const dateObj = new Date(date);
+                const dateString = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+
+                const dateGroup = $(`
+                    <div class="task-date-group">
+                        <div class="task-date-header">${dateString}</div>
+                        <div class="task-list" id="tasks-${date}"></div>
+                    </div>
+                `);
+
+                const taskList = dateGroup.find('.task-list');
+                
+                dateTasks.forEach(task => {
+                    const taskItem = $(`
+                        <div class="task-item p-3 mb-3 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" 
+                             data-task-id="${task.id}" data-task-date="${date}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="priority-${task.priority} task-priority"></span>
+                                    <strong>${task.title}</strong>
+                                    <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">
+                                        ${task.completed ? 'Completed' : 'Pending'}
+                                    </span>
+                                </div>
+                                <small class="text-muted">${task.time || 'All day'}</small>
+                            </div>
+                            ${task.description ? `<p class="mt-2 mb-2 text-muted small">${task.description}</p>` : ''}
+                            <div class="task-history mt-3">
+                                <h6 class="small"><i class="fas fa-history me-1"></i>Task History</h6>
+                                <div class="task-history-list" id="history-${task.id}"></div>
+                            </div>
+                        </div>
+                    `);
+
+                    const historyList = taskItem.find('.task-history-list');
+                    
+                    if (task.history && task.history.length > 0) {
+                        task.history.forEach(entry => {
+                            const historyItem = $(`
+                                <div class="task-history-item small">
+                                    <div class="task-history-date">
+                                        ${new Date(entry.date).toLocaleString()}
+                                        <span class="ms-2 fw-bold">${entry.action}</span>
+                                    </div>
+                                    ${entry.changes ? Object.entries(entry.changes).map(([field, change]) => `
+                                        <div class="history-change">
+                                            <div><strong>${field}:</strong></div>
+                                            ${change.old ? `<div class="history-change-old">${change.old}</div>` : ''}
+                                            <div class="history-change-new">${change.new}</div>
+                                        </div>
+                                    `).join('') : ''}
+                                </div>
+                            `);
+                            historyList.append(historyItem);
+                        });
+                    } else {
+                        historyList.html('<div class="text-muted small">No history available</div>');
+                    }
+
+                    taskList.append(taskItem);
+                });
+
+                container.append(dateGroup);
+            });
+        };
+
+        // Update the navigation handler to include tasks page
+        $(document).on('click', '.nav-link', function(e) {
+            e.preventDefault();
+            const page = $(this).data('page');
+            showPage(`${page}-page`);
+            
+            if (page === 'tasks') {
+                renderAllTasks();
+            }
         });
+
+        // Add task button from tasks page
+        $('#add-task-from-list-btn').click(() => {
+            $('#modalTitle').text('Add New Task');
+            $('#taskForm')[0].reset();
+            $('#taskId').val('');
+            $('#taskDate').val(formatDate(new Date())); // Default to today
+            taskModal.show();
+        });
+
+                // Refactored View Management
+                const viewManager = {
+            currentView: 'calendar',
+            
+            init: function() {
+                this.bindEvents();
+            },
+            
+            bindEvents: function() {
+                $(document).on('click', '.nav-link', (e) => {
+                    e.preventDefault();
+                    const page = $(e.currentTarget).data('page');
+                    this.showView(page);
+                });
+            },
+            
+            showView: function(viewName) {
+                // Hide all views
+                $('.page-content').removeClass('active');
+                
+                // Show selected view
+                $(`#${viewName}-page`).addClass('active');
+                
+                // Update nav link states
+                $('.nav-link').removeClass('active');
+                $(`.nav-link[data-page="${viewName}"]`).addClass('active');
+                
+                // Load data if needed
+                if (viewName === 'tasks') {
+                    this.renderAllTasks();
+                }
+                
+                this.currentView = viewName;
+            },
+            
+            renderAllTasks: function() {
+                const container = $('#all-tasks-container');
+                container.empty();
+                
+                if (!currentUser || !tasks || Object.keys(tasks).length === 0) {
+                    container.html('<div class="alert alert-info">No tasks found</div>');
+                    return;
+                }
+                
+                // Sort dates in descending order
+                Object.keys(tasks)
+                    .sort((a, b) => new Date(b) - new Date(a))
+                    .forEach(date => {
+                        const dateTasks = tasks[date];
+                        if (!dateTasks.length) return;
+                        
+                        const dateHeader = $(`
+                            <div class="task-date-group">
+                                <div class="task-date-header">
+                                    ${new Date(date).toLocaleDateString('en-US', { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    })}
+                                </div>
+                            </div>
+                        `);
+                        
+                        dateTasks.forEach(task => {
+                            dateHeader.append(this.createTaskElement(task, date));
+                        });
+                        
+                        container.append(dateHeader);
+                    });
+            },
+            
+            createTaskElement: function(task, date) {
+                return $(`
+                    <div class="task-item p-3 mb-3 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="priority-${task.priority} task-priority"></span>
+                                <strong>${task.title}</strong>
+                                <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">
+                                    ${task.completed ? 'Completed' : 'Pending'}
+                                </span>
+                            </div>
+                            <small class="text-muted">${task.time || 'All day'}</small>
+                        </div>
+                        ${task.description ? `<p class="mt-2 mb-2">${task.description}</p>` : ''}
+                        ${this.renderTaskHistory(task.history)}
+                    </div>
+                `);
+            },
+            
+            renderTaskHistory: function(history = []) {
+                if (!history.length) return '<div class="text-muted small mt-2">No history available</div>';
+                
+                return `
+                    <div class="task-history mt-3">
+                        <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
+                        ${history.map(entry => `
+                            <div class="task-history-item small mt-2">
+                                <div class="task-history-date">
+                                    ${new Date(entry.date).toLocaleString()}
+                                    <span class="ms-2 fw-bold">${entry.action}</span>
+                                </div>
+                                ${entry.changes ? Object.entries(entry.changes).map(([field, change]) => `
+                                    <div class="history-change mt-1">
+                                        <strong>${field}:</strong>
+                                        ${change.old ? `<div class="history-change-old">Was: ${change.old}</div>` : ''}
+                                        <div class="history-change-new">Now: ${change.new}</div>
+                                    </div>
+                                `).join('') : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        };
+
+        // Initialize the app
+        $(async () => {
+            // Initialize Firebase and auth (existing code)
+            
+            // Initialize view manager
+            viewManager.init();
+            
+            // Add task button handler
+            $('#add-task-global-btn').click(() => {
+                $('#modalTitle').text('Add New Task');
+                $('#taskForm')[0].reset();
+                $('#taskId').val('');
+                $('#taskDate').val(formatDate(new Date()));
+                taskModal.show();
+            });
+            
+            // Rest of your existing initialization code
+        });
+
+        // Modified loadUserTasks to be more efficient
+            // Initialize with calendar page
+            showPage('calendar-page');
+        });
+        
     </script>
 </body>
 </html>

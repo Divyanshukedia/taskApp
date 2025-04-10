@@ -1,0 +1,54 @@
+<div class="calendar-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Profile Settings</h2>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 text-center">
+            <div class="profile-pic mb-3" id="profile-pic-preview" style="width: 150px; height: 150px; margin: 0 auto;">
+                <div id="profile-pic-preview-initial"><i class="fas fa-user" style="font-size: 60px;"></i></div>
+                <img id="profile-pic-preview-image" class="d-none" src="" alt="Profile" style="width: 100%; height: 100%;">
+            </div>
+            <input type="file" id="profile-picture-input" accept="image/*">
+            <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
+                <i class="fas fa-camera"></i> Change Photo
+            </button>
+        </div>
+        <div class="col-md-8">
+            <form id="profile-form">
+                <div class="mb-3">
+                    <label for="profile-name-input" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="profile-name-input" required>
+                </div>
+                <div class="mb-3">
+                    <label for="profile-email-input" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="profile-email-input" disabled>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="profile-gender" class="form-label">Gender</label>
+                        <select class="form-select" id="profile-gender">
+                            <option value="">Select</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer-not-to-say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="profile-phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="profile-phone">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" id="cancel-profile-btn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

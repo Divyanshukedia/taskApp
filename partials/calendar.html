@@ -1,0 +1,52 @@
+<div class="calendar-container">
+    <div class="row g-0">
+        <div class="col-lg-8 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0" id="current-month"></h2>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm me-2" id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                    <button class="btn btn-outline-primary btn-sm me-2" id="today-btn">Today</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="next-month"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="calendar">
+                    <thead><tr class="text-center"><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+                    <tbody id="calendar-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-lg-4 bg-light p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0" id="tasks-date">Tasks</h4>
+                <button class="btn btn-primary btn-sm" id="add-task-btn"><i class="fas fa-plus me-1"></i> Add Task</button>
+            </div>
+            <div id="tasks-container">
+                <div class="alert alert-info" id="no-tasks-message">No tasks for selected date. Click "Add Task" to create one.</div>
+                <ul class="list-unstyled" id="tasks-list"></ul>
+            </div>
+            <div class="mt-4 d-none" id="task-details">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" id="task-detail-title">Task Details</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-1" id="edit-task-btn"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" id="delete-task-btn"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span class="badge bg-success me-2" id="task-status-badge">Pending</span>
+                            <span class="text-muted" id="task-time">Today, 2:00 PM</span>
+                        </div>
+                        <p id="task-description">No description provided.</p>
+                        <div class="task-history mt-4">
+                            <h6><i class="fas fa-history me-2"></i>Task History</h6>
+                            <div class="mt-2" id="history-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

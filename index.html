@@ -94,73 +94,74 @@
       </div>
     
       <!-- Edit Options Modal -->
-      <div class="modal fade" id="editOptionsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="editOptionsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Update Task</h5>
-            </div>
-            <div class="modal-body">
-              <button class="btn btn-success w-100 mb-2" id="markCompletedBtn">Mark as Completed</button>
-              <button class="btn btn-primary w-100" id="openFollowUpModalBtn">Add Follow-up</button>
-            </div>
+              <div class="modal-header">
+                  <h5 class="modal-title">Update Task</h5>
+                  <button class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                  <button class="btn btn-success w-100 mb-2" id="markCompletedBtn">Mark as Completed</button>
+                  <button class="btn btn-primary w-100 mb-2" id="openFollowUpModalBtn">Add Follow-up</button>
+                  <button class="btn btn-warning w-100" id="editTaskDetailsBtn">Edit Task Details</button>
+              </div>
           </div>
-        </div>
       </div>
-    
-      <!-- Follow-up Modal -->
-      <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+    </div>
+    <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Add Follow-up Task</h5>
-              <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <form id="followUpForm">
-                <input type="hidden" id="originalTaskId">
-                <div class="mb-3">
-                  <label class="form-label">Person Name</label>
-                  <input type="text" class="form-control" id="followPersonName">
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Title</label>
-                  <input type="text" class="form-control" id="followTitle">
-                </div>
-                <div class="row mb-3">
-                  <div class="col">
-                    <label class="form-label">Start Time</label>
-                    <input type="time" class="form-control" id="followStartTime">
-                  </div>
-                  <div class="col">
-                    <label class="form-label">End Time</label>
-                    <input type="time" class="form-control" id="followEndTime">
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Type</label>
-                  <select class="form-select" id="followType">
-                    <option value="call">Call</option>
-                    <option value="meeting">Meeting</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Description</label>
-                  <textarea class="form-control" id="followDescription" rows="3"></textarea>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Follow-up Date</label>
-                  <input type="date" class="form-control" id="followUpDate">
-                </div>
-              </form>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
-            </div>
+              <div class="modal-header">
+                  <h5 class="modal-title">Add Follow-up Task</h5>
+                  <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <form id="followUpForm">
+                      <input type="hidden" id="originalTaskId">
+                      <div class="mb-3">
+                          <label class="form-label">Person Name</label>
+                          <input type="text" class="form-control" id="followPersonName" required>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label">Title</label>
+                          <input type="text" class="form-control" id="followTitle" required>
+                      </div>
+                      <div class="row mb-3">
+                          <div class="col">
+                              <label class="form-label">Start Time</label>
+                              <input type="time" class="form-control" id="followStartTime" required>
+                          </div>
+                          <div class="col">
+                              <label class="form-label">End Time</label>
+                              <input type="time" class="form-control" id="followEndTime" required>
+                          </div>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label">Type</label>
+                          <select class="form-select" id="followType" required>
+                              <option value="call">Call</option>
+                              <option value="meeting">Meeting</option>
+                          </select>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label">Description</label>
+                          <textarea class="form-control" id="followDescription" rows="3" required></textarea>
+                      </div>
+                      <div class="mb-3">
+                          <label class="form-label">Follow-up Date</label>
+                          <input type="date" class="form-control" id="followUpDate" required>
+                      </div>
+                  </form>
+              </div>
+              <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+              </div>
           </div>
-        </div>
       </div>
+  </div>
+
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

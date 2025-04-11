@@ -4,179 +4,1085 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar App</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="css/styles.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f5f5f7;
+            min-height: 100vh;
+        }
+        .sidebar {
+            background: white;
+            border-right: 1px solid #dee2e6;
+            padding: 1.5rem;
+        }
+        .calendar-day {
+            height: 100px;
+            cursor: pointer;
+            position: relative;
+        }
+        .calendar-day:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+        }
+        .calendar-day.today {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+        .calendar-day.selected {
+            background-color: rgba(0, 122, 255, 0.15);
+            border-color: #007bff;
+        }
+        .calendar-day.has-tasks::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #007bff;
+        }
+        .task-item {
+            border-left: 3px solid #007bff;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .task-item.completed {
+            border-left-color: #28a745;
+            opacity: 0.8;
+        }
+        .task-priority {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .priority-high {
+            background-color: #dc3545;
+        }
+        .priority-medium {
+            background-color: #ff9500;
+        }
+        .priority-low {
+            background-color: #28a745;
+        }
+        .type-call {
+            background-color: #007bff;
+        }
+        .type-meeting {
+            background-color: #ff9500;
+        }
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 30px;
+            color: #6c757d;
+            cursor: pointer;
+        }
+        .profile-pic img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .task-history-table {
+            font-size: 0.85em;
+        }
+        @media (max-width: 992px) {
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+            .nav-links {
+                display: flex;
+                overflow-x: auto;
+            }
+        }
+        @media (max-width: 768px) {
+            .calendar-day {
+                height: 70px;
+            }
+            .task-history-table {
+                font-size: 0.78em;
+            }
+        }
+
+        .nav-link {
+            color: #6c757d; /* Default color for inactive links */
+            transition: all 0.2s;
+        }
+        .nav-link.active {
+            background-color: #007bff; /* Blue background for active */
+            color: white; /* White text for contrast */
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: #f8f9fa; /* Light gray on hover for inactive */
+            color: #007bff;
+        }
+    </style>
 </head>
 <body>
     <!-- Login Section -->
-    <div id="login-section" class="login-container">
-        <!-- Content loaded from partials/login.html -->
+    <div id="login-section" class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-4 bg-white p-4 rounded shadow-sm mt-5">
+                <h2 class="text-center mb-4">Login</h2>
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="login-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <!-- Main App (hidden initially) -->
-    <div id="app-container" class="app-container d-none">
-        <!-- Sidebar Navigation -->
-        <div class="sidebar" id="sidebar">
-            <!-- Content loaded from partials/sidebar.html -->
-        </div>
-        
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Calendar Page (default) -->
-            <div id="calendar-page" class="page-content">
-                <!-- Content loaded from partials/calendar.html -->
+    <!-- Main App -->
+    <div id="app-container" class="d-flex min-vh-100 d-none">
+        <!-- Sidebar -->
+        <div class="sidebar d-flex flex-column">
+            <div class="text-center border-bottom pb-3 mb-3">
+                <div class="profile-pic" id="profile-pic-container">
+                    <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
+                    <img id="profile-pic-image" class="d-none" src="" alt="Profile">
+                </div>
+                <h5 id="profile-name" class="mb-1">User Name</h5>
+                <p id="profile-email" class="text-muted small mb-2">user@example.com</p>
+                <button class="btn btn-outline-primary btn-sm" id="edit-profile-btn">
+                    <i class="fas fa-edit me-1"></i> Edit Profile
+                </button>
             </div>
+            <div class="nav-links flex-grow-1">
+                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2 active" data-page="calendar">
+                    <i class="fas fa-calendar me-2"></i> Calendar
+                </a>
+                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="tasks">
+                    <i class="fas fa-tasks me-2"></i> All Tasks
+                </a>
+                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="profile">
+                    <i class="fas fa-user me-2"></i> Profile
+                </a>
+            </div>
+            <div class="logout-btn py-2 px-3 rounded text-danger cursor-pointer">
+                <i class="fas fa-sign-out-alt me-2"></i> Logout
+            </div>
+        </div>
 
-            <!-- Tasks Page -->
-            <div id="tasks-page" class="page-content d-none">
-                <!-- Content loaded from partials/tasks.html -->
+        <!-- Main Content -->
+        <div class="flex-grow-1 p-3">
+            <!-- Calendar Page -->
+            <div id="calendar-page" class="page-content">
+                <div class="container bg-white p-4 rounded shadow-sm">
+                    <div class="row g-0">
+                        <div class="col-lg-8 p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 id="current-month" class="mb-0"></h2>
+                                <div>
+                                    <button class="btn btn-outline-secondary btn-sm me-1" id="prev-month">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm me-1" id="today-btn">Today</button>
+                                    <button class="btn btn-outline-secondary btn-sm" id="next-month">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="calendar">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="calendar-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 bg-light p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 id="tasks-date" class="mb-0">Tasks</h4>
+                                <button class="btn btn-primary btn-sm" id="add-task-btn">
+                                    <i class="fas fa-plus me-1"></i> Add Task
+                                </button>
+                            </div>
+                            <div id="tasks-container">
+                                <div class="alert alert-info d-none" id="no-tasks-message">
+                                    No tasks for selected date. Click "Add Task" to create one.
+                                </div>
+                                <ul class="list-unstyled" id="tasks-list"></ul>
+                            </div>
+                            <div class="mt-3 d-none" id="task-details">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 id="task-detail-title" class="mb-0">Task Details</h5>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-secondary me-1" id="edit-task-btn">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" id="delete-task-btn">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <span class="badge bg-success me-2" id="task-status-badge">Pending</span>
+                                            <span class="text-muted" id="task-time"></span>
+                                        </div>
+                                        <p id="task-description" class="mb-3"></p>
+                                        <h6><i class="fas fa-history me-1"></i>Task History</h6>
+                                        <div id="history-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Profile Page -->
             <div id="profile-page" class="page-content d-none">
-                <!-- Content loaded from partials/profile.html -->
+                <div class="container bg-white p-4 rounded shadow-sm">
+                    <h2 class="mb-4">Profile Settings</h2>
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="profile-pic mb-3" id="profile-pic-preview" style="width: 150px; height: 150px;">
+                                <div id="profile-pic-preview-initial"><i class="fas fa-user" style="font-size: 60px;"></i></div>
+                                <img id="profile-pic-preview-image" class="d-none" src="" alt="Profile">
+                            </div>
+                            <input type="file" id="profile-picture-input" accept="image/*" class="d-none">
+                            <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
+                                <i class="fas fa-camera me-1"></i> Change Photo
+                            </button>
+                        </div>
+                        <div class="col-md-8">
+                            <form id="profile-form">
+                                <div class="mb-3">
+                                    <label for="profile-name-input" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="profile-name-input" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="profile-email-input" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="profile-email-input" disabled>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profile-gender" class="form-label">Gender</label>
+                                        <select class="form-select" id="profile-gender">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                            <option value="prefer-not-to-say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="profile-phone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="profile-phone">
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-secondary me-2" id="cancel-profile-btn">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="save-profile-btn">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Page -->
+            <div id="tasks-page" class="page-content d-none">
+                <div class="container bg-white p-4 rounded shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">All Tasks</h2>
+                        <button class="btn btn-primary btn-sm" id="add-task-global-btn">
+                            <i class="fas fa-plus me-1"></i> Add Task
+                        </button>
+                    </div>
+                    <div class="all-tasks-container overflow-auto" style="max-height: 70vh;" id="all-tasks-container"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Task Modal -->
     <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Add New Task</h5>
-              <button class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Task</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="taskTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Person Name</label>
+                            <input type="text" class="form-control" id="personName" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="taskStartTime">
+                            </div>
+                            <div class="col">
+                                <label class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="taskEndTime">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="taskType">
+                                <option value="call">Call</option>
+                                <option value="meeting">Meeting</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Task Details</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="taskDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+                </div>
             </div>
-            <div class="modal-body">
-              <form id="taskForm">
-                <input type="hidden" id="taskId">
-
-                <div class="mb-3">
-                  <label class="form-label">Title</label>
-                  <input type="text" class="form-control" id="taskTitle">
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Person Name</label>
-                  <input type="text" class="form-control" id="personName">
-                </div>
-                <div class="row mb-3">
-                  <div class="col">
-                    <label class="form-label">Start Time</label>
-                    <input type="time" class="form-control" id="taskStartTime">
-                  </div>
-                  <div class="col">
-                    <label class="form-label">End Time</label>
-                    <input type="time" class="form-control" id="taskEndTime">
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Type</label>
-                  <select class="form-select" id="taskType">
-                    <option value="call">Call</option>
-                    <option value="meeting">Meeting</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Task Details</label>
-                  <textarea class="form-control" id="taskDescription" rows="3"></textarea>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Date</label>
-                  <input type="date" class="form-control" id="taskDate">
-                </div>
-              </form>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button class="btn btn-primary" id="saveTaskBtn">Save Task</button>
-            </div>
-          </div>
         </div>
-      </div>
-    
-      <!-- Edit Options Modal -->
-    <div class="modal fade" id="editOptionsModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-          <div class="modal-content">
-              <div class="modal-header">
-                  <h5 class="modal-title">Update Task</h5>
-                  <button class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body">
-                  <button class="btn btn-success w-100 mb-2" id="markCompletedBtn">Mark as Completed</button>
-                  <button class="btn btn-primary w-100 mb-2" id="openFollowUpModalBtn">Add Follow-up</button>
-                  <button class="btn btn-warning w-100" id="editTaskDetailsBtn">Edit Task Details</button>
-              </div>
-          </div>
-      </div>
     </div>
+
+    <!-- Edit Options Modal -->
+    <div class="modal fade" id="editOptionsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Task</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <button class="btn btn-success w-100 mb-2" id="markCompletedBtn">Mark as Completed</button>
+                    <button class="btn btn-primary w-100 mb-2" id="openFollowUpModalBtn">Add Follow-up</button>
+                    <button class="btn btn-warning w-100" id="editTaskDetailsBtn">Edit Task Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-up Modal -->
     <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-          <div class="modal-content">
-              <div class="modal-header">
-                  <h5 class="modal-title">Add Follow-up Task</h5>
-                  <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                  <form id="followUpForm">
-                      <input type="hidden" id="originalTaskId">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Follow-up Task</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="followUpForm">
+                        <input type="hidden" id="originalTaskId">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="followTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Person Name</label>
+                            <input type="text" class="form-control" id="followPersonName" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="followStartTime" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="followEndTime" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="followType" required>
+                                <option value="call">Call</option>
+                                <option value="meeting">Meeting</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Task Details</label>
+                            <textarea class="form-control" id="followDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Follow-up Date</label>
+                            <input type="date" class="form-control" id="followUpDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                      <div class="mb-3">
-                          <label class="form-label">Title</label>
-                          <input type="text" class="form-control" id="followTitle" required>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Person Name</label>
-                        <input type="text" class="form-control" id="followPersonName" required>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC87g6-ZLkXW9bPFy3Kn0ZASKYG-EiRArE",
+            authDomain: "eventseatmanagement.firebaseapp.com",
+            projectId: "eventseatmanagement",
+            storageBucket: "eventseatmanagement.appspot.com",
+            messagingSenderId: "911745257961",
+            appId: "1:911745257961:web:2759656a91df70fd5dbb78",
+            measurementId: "G-9K4SXKD384"
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+    
+        // App logic
+        $(() => {
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            let currentDate = new Date();
+            let selectedDate = new Date();
+            let selectedTask = null;
+            let tasks = {};
+            let currentUser = null;
+            let userProfileData = {};
+            const taskModal = new bootstrap.Modal('#taskModal');
+            const editOptionsModal = new bootstrap.Modal('#editOptionsModal');
+            const followUpModal = new bootstrap.Modal('#followUpModal');
+    
+            // Auth state listener
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    $('#login-section').addClass('d-none');
+                    $('#app-container').removeClass('d-none');
+                    await loadUserProfile();
+                    updateProfileDisplay();
+                    loadUserTasks();
+                    $('#login-form')[0].reset();
+                } else {
+                    currentUser = null;
+                    $('#login-section').removeClass('d-none');
+                    $('#app-container').addClass('d-none');
+                    tasks = {};
+                    selectedTask = null;
+                }
+            });
+    
+            // Profile Management
+            const loadUserProfile = async () => {
+                if (!currentUser) return;
+                const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
+                const docSnap = await getDoc(profileRef);
+                userProfileData = docSnap.exists() ? docSnap.data() : {
+                    name: currentUser.displayName || '',
+                    email: currentUser.email,
+                    gender: '',
+                    phone: '',
+                    photoURL: currentUser.photoURL || ''
+                };
+                if (!docSnap.exists()) await setDoc(profileRef, userProfileData);
+            };
+    
+            const saveUserProfile = async () => {
+                if (!currentUser) return false;
+                const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
+                try {
+                    await updateDoc(profileRef, userProfileData);
+                    if (userProfileData.name || userProfileData.photoURL) {
+                        await updateProfile(currentUser, {
+                            displayName: userProfileData.name,
+                            photoURL: userProfileData.photoURL
+                        });
+                    }
+                    return true;
+                } catch (error) {
+                    console.error("Error saving profile:", error);
+                    return false;
+                }
+            };
+    
+            const updateProfileDisplay = () => {
+                if (!currentUser) return;
+                $('#profile-name').text(userProfileData.name || 'User Name');
+                $('#profile-email').text(userProfileData.email || 'user@example.com');
+                $('#profile-name-input').val(userProfileData.name || '');
+                $('#profile-email-input').val(userProfileData.email || '');
+                $('#profile-gender').val(userProfileData.gender || '');
+                $('#profile-phone').val(userProfileData.phone || '');
+    
+                const updatePic = (initial, image, container) => {
+                    if (userProfileData.photoURL) {
+                        initial.addClass('d-none');
+                        image.removeClass('d-none').attr('src', userProfileData.photoURL);
+                    } else {
+                        initial.removeClass('d-none').text(userProfileData.name ? userProfileData.name.charAt(0).toUpperCase() : 'U');
+                        image.addClass('d-none');
+                    }
+                };
+                updatePic($('#profile-pic-initial'), $('#profile-pic-image'), $('#profile-pic-container'));
+                updatePic($('#profile-pic-preview-initial'), $('#profile-pic-preview-image'), $('#profile-pic-preview'));
+            };
+    
+            const uploadProfilePicture = async (file) => {
+                if (!currentUser) return null;
+                const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
+            };
+    
+            // Task Management
+            const loadUserTasks = () => {
+                if (!currentUser) return;
+                onSnapshot(collection(db, 'users', currentUser.uid, 'tasks'), snapshot => {
+                    tasks = {};
+                    snapshot.forEach(doc => tasks[doc.id] = doc.data().items || []);
+                    renderCalendar();
+                    if ($('#tasks-page').hasClass('active')) renderAllTasks();
+                });
+            };
+    
+            const saveTasks = async (date, taskList) => {
+                if (!currentUser) return;
+                const tasksRef = doc(db, 'users', currentUser.uid, 'tasks', date);
+                try {
+                    await setDoc(tasksRef, { items: taskList }, { merge: false });
+                } catch (error) {
+                    console.error(`Error saving tasks for ${date}:`, error);
+                }
+            };
+    
+            const findTask = (taskId) => {
+                for (const date in tasks) {
+                    const task = tasks[date].find(t => t.id == taskId);
+                    if (task) return { task, date };
+                }
+                return null;
+            };
+    
+            // Calendar Rendering
+            const renderCalendar = () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                $('#current-month').text(`${monthNames[month]} ${year}`);
+    
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                let date = 1;
+                let calendarBody = '';
+    
+                for (let i = 0; i < 6 && date <= daysInMonth; i++) {
+                    calendarBody += '<tr>';
+                    for (let j = 0; j < 7; j++) {
+                        if (i === 0 && j < firstDay || date > daysInMonth) {
+                            calendarBody += '<td class="calendar-day empty"></td>';
+                        } else {
+                            const dateStr = formatDate(new Date(year, month, date));
+                            const classes = [
+                                'calendar-day',
+                                isSameDay(new Date(year, month, date), new Date()) ? 'today' : '',
+                                isSameDay(new Date(year, month, date), selectedDate) ? 'selected' : '',
+                                tasks[dateStr]?.length > 0 ? 'has-tasks' : ''
+                            ].filter(Boolean).join(' ');
+                            calendarBody += `<td class="${classes}" data-date="${dateStr}"><div>${date}</div></td>`;
+                            date++;
+                        }
+                    }
+                    calendarBody += '</tr>';
+                }
+                $('#calendar-body').html(calendarBody);
+                updateTasksPanel();
+            };
+    
+            const updateTasksPanel = () => {
+                const dateStr = formatDate(selectedDate);
+                const dateTasks = tasks[dateStr] || [];
+                $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
+                $('#no-tasks-message').toggleClass('d-none', dateTasks.length > 0);
+                $('#tasks-list').html(dateTasks.map(task => `
+                    <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div><span class="type-${task.type || 'call'} task-priority"></span><strong>${task.title}</strong></div>
+                            <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
+                        </div>
+                        ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
+                    </li>
+                `).join(''));
+                $('#task-details').toggleClass('d-none', !selectedTask);
+            };
+    
+            const showTaskDetails = (task, taskDate) => {
+                selectedTask = task;
+                selectedDate = new Date(taskDate);
+                $('#task-detail-title').text(task.title);
+                $('#task-description').html(task.description || '<p class="text-muted">No description provided.</p>');
+                $('#task-time').text(task.time?.start ? `${formatDate(selectedDate)}, ${task.time.start} - ${task.time.end}` : 'All day');
+                $('#task-status-badge').removeClass('bg-success bg-secondary')
+                    .addClass(task.completed ? 'bg-success' : 'bg-secondary')
+                    .text(task.completed ? 'Completed' : 'Pending');
+    
+                let combinedHistory = [...(task.history || [])];
+                if (task.followUpFrom) {
+                    let currentTask = task;
+                    while (currentTask.followUpFrom) {
+                        const originalTask = Object.values(tasks).flat().find(t => String(t.id) === String(currentTask.followUpFrom));
+                        if (originalTask?.history) {
+                            const filteredHistory = originalTask.history.filter(entry =>
+                                !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
+                            );
+                            combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                        }
+                        currentTask = originalTask || currentTask;
+                    }
+                } else {
+                    combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                }
+    
+                $('#history-list').html(combinedHistory.length ? `
+                    <div class="table-responsive">
+                        <table class="task-history-table table table-bordered">
+                            <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
+                            <tbody>${combinedHistory.map(entry =>
+                                Object.entries(entry.changes || {}).map(([field, change], index) => `
+                                    <tr>
+                                        ${index === 0 ? `
+                                            <td rowspan="${Object.keys(entry.changes).length}">${new Date(entry.date).toLocaleString()}</td>
+                                            <td rowspan="${Object.keys(entry.changes).length}">${entry.action}</td>
+                                        ` : ''}
+                                        <td>${field}</td>
+                                        <td>${change.old !== undefined ? `<span class="text-danger text-decoration-line-through">${change.old ?? 'None'}</span>` : ''}</td>
+                                        <td><span class="text-success">${change.new ?? 'None'}</span></td>
+                                    </tr>
+                                `).join('')
+                            ).join('')}</tbody>
+                        </table>
                     </div>
-                      <div class="row mb-3">
-                          <div class="col">
-                              <label class="form-label">Start Time</label>
-                              <input type="time" class="form-control" id="followStartTime" required>
-                          </div>
-                          <div class="col">
-                              <label class="form-label">End Time</label>
-                              <input type="time" class="form-control" id="followEndTime" required>
-                          </div>
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label">Type</label>
-                          <select class="form-select" id="followType" required>
-                              <option value="call">Call</option>
-                              <option value="meeting">Meeting</option>
-                          </select>
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label">Task Details</label>
-                          <textarea class="form-control" id="followDescription" rows="3" required></textarea>
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label">Follow-up Date</label>
-                          <input type="date" class="form-control" id="followUpDate" required>
-                      </div>
-                  </form>
-              </div>
-              <div class="modal-footer">
-                  <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
-              </div>
-          </div>
-      </div>
-  </div>
-
-
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                ` : '<div class="text-muted small">No history available</div>');
     
-    <!-- Firebase -->
-    <script type="module" src="js/firebase.js"></script>
+                renderCalendar();
+            };
     
-    <!-- App Scripts -->
-    <script type="module" src="js/auth.js"></script>
-    <script type="module" src="js/calendar.js"></script>
-    <script type="module" src="js/tasks.js"></script>
-    <script type="module" src="js/profile.js"></script>
-    <script type="module" src="js/app.js"></script>
+            const renderAllTasks = () => {
+                const container = $('#all-tasks-container').empty();
+                if (!currentUser || !Object.keys(tasks).length) {
+                    container.html('<div class="alert alert-info">No tasks found</div>');
+                    return;
+                }
+    
+                Object.keys(tasks)
+                    .sort((a, b) => new Date(b) - new Date(a))
+                    .forEach(date => {
+                        const dateTasks = tasks[date];
+                        if (!dateTasks.length) return;
+                        const dateHeader = $(`
+                            <div class="mb-4 p-3 bg-light rounded">
+                                <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
+                                <ul class="list-unstyled"></ul>
+                            </div>
+                        `);
+                        const taskList = dateHeader.find('ul');
+                        dateTasks.forEach(task => {
+                            // Prepare history with follow-up details
+                            const historyEntries = (task.history || []).map(entry => {
+                                const changes = entry.changes || {};
+                                if (entry.action === 'Follow-up created') {
+                                    const followUpId = changes.followUpId?.new;
+                                    const followUp = findTask(followUpId);
+                                    return {
+                                        date: entry.date,
+                                        action: `Follow-up created: ${changes.followUpTitle?.new || 'Untitled'}`,
+                                        details: [
+                                            { field: 'Date', old: '', new: changes.followUpDate?.new || 'N/A' },
+                                            { field: 'Time', old: '', new: changes.followUpTime?.new || 'N/A' },
+                                            { field: 'Status', old: '', new: followUp?.task.completed ? 'Completed' : 'Pending' }
+                                        ]
+                                    };
+                                }
+                                return {
+                                    date: entry.date,
+                                    action: entry.action,
+                                    details: Object.entries(changes).map(([field, change]) => ({
+                                        field,
+                                        old: change.old ?? 'None',
+                                        new: change.new ?? 'None'
+                                    }))
+                                };
+                            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+                            taskList.append(`
+                                <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="type-${task.type || 'call'} task-priority"></span>
+                                            <strong>${task.title}</strong>
+                                            <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
+                                        </div>
+                                        <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
+                                    </div>
+                                    ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
+                                    <div class="task-history mt-3 ${historyEntries.length ? '' : 'd-none'}">
+                                        <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
+                                        <div class="table-responsive">
+                                            <table class="task-history-table table table-bordered">
+                                                <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
+                                                <tbody>${
+                                                    historyEntries.map(entry =>
+                                                        entry.details.map((detail, index) => `
+                                                            <tr>
+                                                                ${index === 0 ? `
+                                                                    <td rowspan="${entry.details.length}">${new Date(entry.date).toLocaleString()}</td>
+                                                                    <td rowspan="${entry.details.length}">${entry.action}</td>
+                                                                ` : ''}
+                                                                <td>${detail.field}</td>
+                                                                <td><span class="text-danger text-decoration-line-through">${detail.old}</span></td>
+                                                                <td><span class="text-success">${detail.new}</span></td>
+                                                            </tr>
+                                                        `).join('')
+                                                    ).join('')
+                                                }</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </li>
+                            `);
+                        });
+                        container.append(dateHeader);
+                    });
+            };
+    
+            // Utility Functions
+            const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+            const formatDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
+            // Event Handlers
+            $('#login-form').submit(async (e) => {
+                e.preventDefault();
+                try {
+                    await signInWithEmailAndPassword(auth, $('#login-email').val(), $('#login-password').val());
+                    window.location.reload();
+                } catch (error) {
+                    alert('Login failed: ' + error.message);
+                    $('#login-password').val('');
+                }
+            });
+    
+            $('.logout-btn').click(async () => {
+                await signOut(auth);
+                window.location.reload();
+            });
+    
+            $('#prev-month').click(() => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+    
+            $('#next-month').click(() => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+    
+            $('#today-btn').click(() => {
+                currentDate = selectedDate = new Date();
+                renderCalendar();
+            });
+    
+            $(document).on('click', '.calendar-day:not(.empty)', (e) => {
+                selectedDate = new Date($(e.currentTarget).data('date'));
+                selectedTask = null;
+                renderCalendar();
+            });
+    
+            $(document).on('click', '.task-item', function() {
+                const taskId = $(this).data('task-id');
+                const taskDate = $(this).data('task-date') || formatDate(selectedDate);
+                const task = tasks[taskDate]?.find(t => t.id === taskId);
+                if (task) {
+                    if ($('#tasks-page').hasClass('active')) {
+                        showPage('calendar-page');
+                    }
+                    showTaskDetails(task, taskDate);
+                }
+            });
+    
+            $('#add-task-btn, #add-task-global-btn').click(() => {
+                $('#taskForm')[0].reset();
+                $('#taskId').val('');
+                $('#taskDate').val(formatDate(selectedDate));
+                taskModal.show();
+            });
+    
+            $('#saveTaskBtn').click(async () => {
+                const taskId = $('#taskId').val();
+                const taskDate = $('#taskDate').val();
+                const taskData = {
+                    id: taskId ? parseInt(taskId) : Date.now(),
+                    personName: $('#personName').val(),
+                    title: $('#taskTitle').val(),
+                    time: { start: $('#taskStartTime').val(), end: $('#taskEndTime').val() },
+                    type: $('#taskType').val(),
+                    description: $('#taskDescription').val(),
+                    completed: false,
+                    history: []
+                };
+    
+                if (!taskData.title || !taskData.personName) return alert('Title and Person Name are required');
+                tasks[taskDate] = tasks[taskDate] || [];
+                const existingIndex = taskId ? tasks[taskDate].findIndex(t => t.id == taskId) : -1;
+                const oldTask = existingIndex >= 0 ? tasks[taskDate][existingIndex] : null;
+    
+                const changes = oldTask ? {
+                    ...(oldTask.personName !== taskData.personName && { personName: { old: oldTask.personName, new: taskData.personName } }),
+                    ...(oldTask.title !== taskData.title && { title: { old: oldTask.title, new: taskData.title } }),
+                    ...(oldTask.type !== taskData.type && { type: { old: oldTask.type, new: taskData.type } }),
+                    ...((oldTask.time.start !== taskData.time.start || oldTask.time.end !== taskData.time.end) && {
+                        time: { old: `${oldTask.time.start || ''} - ${oldTask.time.end || ''}`, new: `${taskData.time.start} - ${taskData.time.end}` }
+                    }),
+                    ...(oldTask.description !== taskData.description && { description: { old: oldTask.description || 'None', new: taskData.description || 'None' } })
+                } : {
+                    personName: { new: taskData.personName },
+                    title: { new: taskData.title },
+                    type: { new: taskData.type },
+                    time: { new: `${taskData.time.start} - ${taskData.time.end}` },
+                    description: { new: taskData.description || 'None' }
+                };
+    
+                taskData.history = oldTask?.history || [];
+                taskData.followUps = oldTask?.followUps || [];
+                if (Object.keys(changes).length) {
+                    taskData.history.unshift({ date: new Date().toISOString(), action: taskId ? 'Task updated' : 'Task created', changes });
+                }
+    
+                if (existingIndex >= 0) tasks[taskDate][existingIndex] = taskData;
+                else tasks[taskDate].push(taskData);
+    
+                await saveTasks(taskDate, tasks[taskDate]);
+                taskModal.hide();
+                renderCalendar();
+                showTaskDetails(taskData, taskDate);
+                $('#taskForm')[0].reset();
+            });
+    
+            $('#edit-task-btn').click(() => {
+                if (!selectedTask) return;
+                editOptionsModal.show();
+                $('#editOptionsModal').data({ 'task-id': selectedTask.id, 'task-date': formatDate(selectedDate) });
+            });
+    
+            $('#editTaskDetailsBtn').click(() => {
+                const { taskId, taskDate } = $('#editOptionsModal').data();
+                if (!tasks[taskDate]) {
+                    console.error(`No tasks found for date: ${taskDate}`);
+                    return;
+                }
+                const task = tasks[taskDate].find(t => t.id == taskId);
+                if (task) {
+                    $('#taskId').val(task.id);
+                    $('#taskDate').val(taskDate);
+                    $('#personName').val(task.personName);
+                    $('#taskTitle').val(task.title);
+                    $('#taskStartTime').val(task.time?.start || '');
+                    $('#taskEndTime').val(task.time?.end || '');
+                    $('#taskType').val(task.type);
+                    $('#taskDescription').val(task.description || '');
+                    taskModal.show();
+                } else {
+                    console.error(`Task with ID ${taskId} not found on ${taskDate}`);
+                }
+                editOptionsModal.hide();
+            });
+    
+            $('#delete-task-btn').click(async () => {
+                if (!selectedTask || !confirm('Delete this task?')) return;
+                const dateStr = formatDate(selectedDate);
+                tasks[dateStr] = tasks[dateStr].filter(t => t.id !== selectedTask.id);
+                await saveTasks(dateStr, tasks[dateStr]);
+                selectedTask = null;
+                renderCalendar();
+            });
+    
+            $('#markCompletedBtn').click(async () => {
+                const { taskId, taskDate } = $('#editOptionsModal').data();
+                if (!tasks[taskDate]) {
+                    console.error(`No tasks found for date: ${taskDate}`);
+                    return;
+                }
+                const task = tasks[taskDate].find(t => t.id == taskId);
+                if (task) {
+                    task.completed = true;
+                    task.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
+                    await saveTasks(taskDate, tasks[taskDate]);
+                    renderCalendar();
+                    showTaskDetails(task, taskDate);
+                } else {
+                    console.error(`Task with ID ${taskId} not found on ${taskDate}`);
+                }
+                editOptionsModal.hide();
+            });
+    
+            $('#openFollowUpModalBtn').click(() => {
+                $('#originalTaskId').val($('#editOptionsModal').data('task-id'));
+                followUpModal.show();
+                editOptionsModal.hide();
+            });
+    
+            $('#saveFollowUpBtn').click(async () => {
+                const taskId = $('#originalTaskId').val();
+                const taskDate = $('#followUpDate').val();
+                const followUpData = {
+                    id: Date.now(),
+                    personName: $('#followPersonName').val(),
+                    title: $('#followTitle').val(),
+                    time: { start: $('#followStartTime').val(), end: $('#followEndTime').val() },
+                    type: $('#followType').val(),
+                    description: $('#followDescription').val(),
+                    completed: false,
+                    followUpFrom: taskId,
+                    history: []
+                };
+    
+                if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
+                const original = findTask(taskId);
+                if (!original) return;
+    
+                followUpData.history.push({
+                    date: new Date().toISOString(),
+                    action: 'Follow-up created',
+                    changes: {
+                        personName: { old: original.task.personName, new: followUpData.personName },
+                        title: { old: original.task.title, new: followUpData.title },
+                        type: { old: original.task.type, new: followUpData.type },
+                        time: { old: `${original.task.time.start || ''} - ${original.task.time.end || ''}`, new: `${followUpData.time.start} - ${followUpData.time.end}` },
+                        description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
+                        completed: { old: original.task.completed, new: false }
+                    }
+                });
+    
+                tasks[taskDate] = tasks[taskDate] || [];
+                tasks[taskDate].push(followUpData);
+    
+                original.task.history = original.task.history || [];
+                original.task.history.unshift({
+                    date: new Date().toISOString(),
+                    action: 'Follow-up created',
+                    changes: {
+                        followUpId: { new: followUpData.id },
+                        followUpTitle: { new: followUpData.title },
+                        followUpDate: { new: taskDate },
+                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` }
+                    }
+                });
+                original.task.followUps = original.task.followUps || [];
+                original.task.followUps.push({ id: followUpData.id, date: taskDate });
+    
+                await Promise.all([
+                    saveTasks(taskDate, tasks[taskDate]),
+                    saveTasks(original.date, tasks[original.date])
+                ]);
+    
+                followUpModal.hide();
+                renderCalendar();
+                showTaskDetails(original.task, original.date);
+                $('#followUpForm')[0].reset();
+            });
+    
+            // Profile Handlers
+            $('#edit-profile-btn, .nav-link[data-page="profile"]').click((e) => {
+                e.preventDefault();
+                showPage('profile-page');
+            });
+    
+            $('#cancel-profile-btn').click(() => showPage('calendar-page'));
+    
+            $('#change-profile-pic-btn').click(() => $('#profile-picture-input').click());
+    
+            $('#profile-picture-input').change(async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                $('#change-profile-pic-btn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+                try {
+                    const downloadURL = await uploadProfilePicture(file);
+                    if (downloadURL) {
+                        userProfileData.photoURL = downloadURL;
+                        updateProfileDisplay();
+                    }
+                } catch (error) {
+                    alert('Failed to upload profile picture');
+                } finally {
+                    $('#change-profile-pic-btn').html('<i class="fas fa-camera me-1"></i> Change Photo');
+                }
+            });
+    
+            $('#profile-form').submit(async (e) => {
+                e.preventDefault();
+                userProfileData.name = $('#profile-name-input').val();
+                userProfileData.gender = $('#profile-gender').val();
+                userProfileData.phone = $('#profile-phone').val();
+                $('#save-profile-btn').html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+                try {
+                    if (await saveUserProfile()) {
+                        updateProfileDisplay();
+                        showPage('calendar-page');
+                        alert('Profile updated successfully!');
+                    }
+                } catch (error) {
+                    alert('Failed to save profile');
+                } finally {
+                    $('#save-profile-btn').html('Save Changes');
+                }
+            });
+    
+            // Navigation
+            const showPage = (pageId) => {
+                $('.page-content').removeClass('active').addClass('d-none');
+                $(`#${pageId}`).addClass('active').removeClass('d-none');
+                $('.nav-link').removeClass('active');
+                $(`.nav-link[data-page="${pageId.replace('-page', '')}"]`).addClass('active');
+                if (pageId === 'tasks-page') renderAllTasks();
+                else if (pageId === 'calendar-page') renderCalendar();
+            };
+    
+            $(document).on('click', '.nav-link', (e) => {
+                e.preventDefault();
+                showPage($(e.currentTarget).data('page') + '-page');
+            });
+    
+            // Initialize
+            showPage('calendar-page');
+            renderCalendar();
+        });
+    </script>
 </body>
 </html>

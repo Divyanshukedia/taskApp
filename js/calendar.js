@@ -188,7 +188,7 @@ $(document).ready(() => {
         $('#app-container').toggleClass('d-none', !user);
         if (user) loadUserTasks();
         else tasks = {}, selectedTask = null;
-        $('#login-form')[0].reset();
+        // $('#login-form')[0].reset();
     });
 
     $('#saveTaskBtn').click(async () => {

@@ -16,6 +16,8 @@
             background: white;
             border-right: 1px solid #dee2e6;
             padding: 1.5rem;
+            width: 250px;
+            z-index: 1040;
         }
         .calendar-day {
             height: 100px;
@@ -104,9 +106,18 @@
                 border-right: none;
                 border-bottom: 1px solid #dee2e6;
             }
-            .nav-links {
-                display: flex;
-                overflow-x: auto;
+            .nav-link.active {
+                background-color: #007bff; /* Bootstrap primary blue */
+                color: white !important; /* Ensure text is white for contrast */
+                font-weight: 500; /* Slightly bolder text */
+            }
+            .nav-link {
+                color: #333; /* Default color for inactive items */
+                transition: all 0.2s ease; /* Smooth transition for hover/active */
+            }
+            .nav-link:hover {
+                background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
+                color: #007bff;
             }
         }
         @media (max-width: 768px) {
@@ -117,18 +128,70 @@
                 font-size: 0.78em;
             }
         }
-        .nav-link {
-            color: #6c757d;
-            transition: all 0.2s;
-        }
         .nav-link.active {
-            background-color: #007bff;
-            color: white;
-            font-weight: 500;
+            background-color: #007bff; /* Bootstrap primary blue */
+            color: white !important; /* Ensure text is white for contrast */
+            font-weight: 500; /* Slightly bolder text */
+        }
+        .nav-link {
+            color: #333; /* Default color for inactive items */
+            transition: all 0.2s ease; /* Smooth transition for hover/active */
         }
         .nav-link:hover {
-            background-color: #f8f9fa;
+            background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
             color: #007bff;
+        }
+
+        @media (max-width: 991px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .nav-link.active {
+                background-color: #007bff; /* Bootstrap primary blue */
+                color: white !important; /* Ensure text is white for contrast */
+                font-weight: 500; /* Slightly bolder text */
+            }
+            .nav-link {
+                color: #333; /* Default color for inactive items */
+                transition: all 0.2s ease; /* Smooth transition for hover/active */
+            }
+            .nav-link:hover {
+                background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
+                color: #007bff;
+            }
+            #main-content {
+                margin-top: 50px; /* Space for header */
+            }
+            .close-sidebar-btn {
+                display: block;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .sidebar {
+                position: static;
+                height: auto;
+            }
+            #toggle-sidebar-btn {
+                display: none;
+            }
+            #main-content {
+                margin-left: 250px; /* Match sidebar width */
+                margin-top: 0;
+            }
+            .close-sidebar-btn {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -155,35 +218,44 @@
 
     <!-- Main App -->
     <div id="app-container" class="d-flex min-vh-100 d-none">
+        <!-- Header with Hamburger -->
+        <header class="d-lg-none bg-white border-bottom p-2 w-100 " >
+            <button class="btn btn-outline-secondary" id="toggle-sidebar-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </header>
         <!-- Sidebar -->
-        <div class="sidebar d-flex flex-column">
+        <div class="sidebar" id="sidebar">
+            <button class="btn btn-outline-danger mb-3 close-sidebar-btn d-lg-none" id="close-sidebar-btn">
+            <i class="fas fa-times"></i> Close
+            </button>
             <div class="text-center border-bottom pb-3 mb-3">
-                <div class="profile-pic" id="profile-pic-container">
-                    <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
-                    <img id="profile-pic-image" class="d-none" src="" alt="Profile">
-                </div>
-                <h5 id="profile-name" class="mb-1">User Name</h5>
-                <p id="profile-email" class="text-muted small mb-2">user@example.com</p>
-                <button class="btn btn-outline-primary btn-sm" id="edit-profile-btn">
-                    <i class="fas fa-edit me-1"></i> Edit Profile
-                </button>
+            <div class="profile-pic" id="profile-pic-container">
+                <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
+                <img id="profile-pic-image" class="d-none" src="" alt="Profile">
             </div>
-            <div class="nav-links flex-grow-1">
-                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2 active" data-page="calendar">
-                    <i class="fas fa-calendar me-2"></i> Calendar
-                </a>
-                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="tasks">
-                    <i class="fas fa-tasks me-2"></i> All Tasks
-                </a>
-                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="recurring">
-                    <i class="fas fa-redo me-2"></i> Recurring Events
-                </a>
-                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="profile">
-                    <i class="fas fa-user me-2"></i> Profile
-                </a>
+            <h5 id="profile-name" class="mb-1">User Name</h5>
+            <p id="profile-email" class="text-muted small mb-2">user@example.com</p>
+            <button class="btn btn-outline-primary btn-sm" id="edit-profile-btn">
+                <i class="fas fa-edit me-1"></i> Edit Profile
+            </button>
+            </div>
+            <div class="nav-links flex-grow-1 d-flex flex-column">
+            <a href="#" class="nav-link py-2 px-3 rounded mb-2 active" data-page="calendar">
+                <i class="fas fa-calendar me-2"></i> Calendar
+            </a>
+            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="tasks">
+                <i class="fas fa-tasks me-2"></i> All Tasks
+            </a>
+            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="recurring">
+                <i class="fas fa-redo me-2"></i> Recurring Events
+            </a>
+            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="profile">
+                <i class="fas fa-user me-2"></i> Profile
+            </a>
             </div>
             <div class="logout-btn py-2 px-3 rounded text-danger cursor-pointer">
-                <i class="fas fa-sign-out-alt me-2"></i> Logout
+            <i class="fas fa-sign-out-alt me-2"></i> Logout
             </div>
         </div>
 
@@ -589,8 +661,7 @@
             </div>
         </div>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <div id="sidebar-overlay" class="position-fixed top-0 left-0 w-100 h-100 bg-dark opacity-50 d-none" style="z-index: 1025;"></div>    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -630,6 +701,15 @@
             const editOptionsModal = new bootstrap.Modal('#editOptionsModal');
             const followUpModal = new bootstrap.Modal('#followUpModal');
 
+            $('#toggle-sidebar-btn').click(() => {
+                $('#sidebar').addClass('active');
+                $('#sidebar-overlay').removeClass('d-none');
+            });
+
+            $('#close-sidebar-btn, #sidebar-overlay').click(() => {
+                $('#sidebar').removeClass('active');
+                $('#sidebar-overlay').addClass('d-none');
+            });
             // Auth state listener
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -959,36 +1039,59 @@
             };
 
             const renderAllTasks = () => {
-                const container = $('#all-tasks-container').empty();
-                if (!currentUser) {
-                    container.html('<div class="alert alert-info">No tasks found</div>');
-                    return;
-                }
+            const container = $('#all-tasks-container').empty();
+            if (!currentUser) {
+                container.html('<div class="alert alert-info">No tasks found</div>');
+                return;
+            }
 
-                const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
-                    taskList.map(task => ({ date, task }))
-                ).filter(({ task }) => !task.followUpFrom);
+            // Search and Sort UI
+            container.html(`
+                <div class="mb-4">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="task-search" placeholder="Search tasks by title...">
+                        <button class="btn btn-outline-secondary" id="clear-search"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <select class="form-select w-50 me-2" id="task-sort-by">
+                            <option value="date">Date</option>
+                            <option value="title">Title</option>
+                            <option value="status">Status</option>
+                        </select>
+                        <button class="btn btn-outline-primary" id="toggle-sort-order" data-order="asc">
+                            <i class="fas fa-sort-up"></i> Asc
+                        </button>
+                    </div>
+                </div>
+                <div id="tasks-listing" class="overflow-auto" style="max-height: 60vh;"></div>
+            `);
 
-                const startDate = new Date();
-                const endDate = new Date(startDate);
-                endDate.setMonth(endDate.getMonth() + 6);
-                const recurringTasks = [];
-                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                    getRecurringInstances(d).forEach(({ date, task }) => {
-                        recurringTasks.push({ date: formatDate(date), task });
-                    });
-                }
+            const listing = $('#tasks-listing');
+            const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
+                taskList.map(task => ({ date, task }))
+            ).filter(({ task }) => !task.followUpFrom);
 
-                const combinedTasks = [...allTasks, ...recurringTasks].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const startDate = new Date();
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 6);
+            const recurringTasks = [];
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                getRecurringInstances(d).forEach(({ date, task }) => {
+                    recurringTasks.push({ date: formatDate(date), task });
+                });
+            }
 
-                const tasksByDate = combinedTasks.reduce((acc, { date, task }) => {
+            const combinedTasks = [...allTasks, ...recurringTasks];
+
+            const renderTasks = (tasksToRender) => {
+                listing.empty();
+                const tasksByDate = tasksToRender.reduce((acc, { date, task }) => {
                     acc[date] = acc[date] || [];
                     acc[date].push(task);
                     return acc;
                 }, {});
 
-                Object.keys(tasksByDate).forEach(date => {
-                    const dateTasks = tasksByDate[date];
+                $.each(tasksByDate, (date, dateTasks) => {
                     if (!dateTasks.length) return;
                     const dateHeader = $(`
                         <div class="mb-4 p-3 bg-light rounded">
@@ -997,7 +1100,7 @@
                         </div>
                     `);
                     const taskList = dateHeader.find('ul');
-                    dateTasks.forEach(task => {
+                    $.each(dateTasks, (index, task) => {
                         let combinedHistory = [...(task.history || [])];
                         if (task.followUpFrom) {
                             let currentTask = task;
@@ -1044,7 +1147,7 @@
                                                     if (task.isRecurring && !('description' in changes) && entry.action !== 'Follow-up created') {
                                                         changes.description = { old: task.description || 'None', new: task.description || 'None' };
                                                     }
-                                                    delete changes.followUpId; // Remove id from display
+                                                    delete changes.followUpId;
                                                     return Object.entries(changes).map((detail, index) => `
                                                         <tr>
                                                             ${index === 0 ? `
@@ -1064,9 +1167,58 @@
                             </li>
                         `);
                     });
-                    container.append(dateHeader);
+                    listing.append(dateHeader);
                 });
+
+                if (!tasksToRender.length) {
+                    listing.html('<div class="alert alert-info">No tasks match your search</div>');
+                }
             };
+
+            // Initial render
+            renderTasks(combinedTasks);
+
+            // Search handler using jQuery
+            $('#task-search').on('input', function() {
+                const searchQuery = $(this).val().toLowerCase();
+                const filteredTasks = combinedTasks.filter(({ task }) => 
+                    task.title.toLowerCase().includes(searchQuery)
+                );
+                renderTasks(filteredTasks);
+            });
+
+            // Clear search
+            $('#clear-search').click(() => {
+                $('#task-search').val('');
+                renderTasks(combinedTasks);
+            });
+
+            // Sort handler using jQuery
+            $('#task-sort-by, #toggle-sort-order').on('change click', function() {
+                const sortBy = $('#task-sort-by').val();
+                const sortOrder = $('#toggle-sort-order').data('order') || 'asc';
+                if (this.id === 'toggle-sort-order') {
+                    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                    $('#toggle-sort-order').data('order', newOrder)
+                        .html(`<i class="fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'}"></i> ${newOrder === 'asc' ? 'Asc' : 'Desc'}`);
+                }
+
+                let sortedTasks = [...combinedTasks];
+                sortedTasks.sort((a, b) => {
+                    let comparison = 0;
+                    if (sortBy === 'date') {
+                        comparison = new Date(a.date) - new Date(b.date);
+                    } else if (sortBy === 'title') {
+                        comparison = a.task.title.localeCompare(b.task.title);
+                    } else if (sortBy === 'status') {
+                        comparison = (a.task.completed ? 1 : 0) - (b.task.completed ? 1 : 0);
+                    }
+                    return sortOrder === 'asc' ? comparison : -comparison;
+                });
+
+                renderTasks(sortedTasks);
+            });
+        };
 
             const renderRecurringEvents = () => {
                 const container = $('#recurring-events-container').empty();
@@ -1583,8 +1735,8 @@
                 }
             });
 
-                        // Navigation
-                        const showPage = (pageId) => {
+            // Navigation
+            const showPage = (pageId) => {
                 $('.page-content').addClass('d-none').removeClass('active');
                 $(`#${pageId}`).removeClass('d-none').addClass('active');
                 $('.nav-link').removeClass('active');
@@ -1599,6 +1751,12 @@
                 } else if (pageId === 'profile-page') {
                     updateProfileDisplay();
                 }
+
+                // Hide sidebar on mobile after navigation
+                if ($(window).width() < 992) {
+                    $('#sidebar').removeClass('active');
+                    $('#sidebar-overlay').addClass('d-none');
+                }
             };
 
             $('.nav-link').click(function(e) {
@@ -1610,7 +1768,6 @@
             // Initial setup
             renderCalendar();
             showPage('calendar-page');
-
             // Ensure history consistency on page load
             const ensureHistoryConsistency = () => {
                 Object.keys(tasks).forEach(date => {
@@ -1636,6 +1793,10 @@
             // Handle window resize for responsive calendar
             $(window).resize(() => {
                 renderCalendar();
+                if ($(window).width() >= 992) {
+                    $('#sidebar').removeClass('active');
+                    $('#sidebar-overlay').addClass('d-none');
+                }
             });
         });
     </script>

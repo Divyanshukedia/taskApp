@@ -74,6 +74,9 @@
         .type-meeting {
             background-color: #ff9500;
         }
+        .type-recurring {
+            background-color: #6f42c1; /* Purple for recurring events */
+        }
         .profile-pic {
             width: 80px;
             height: 80px;
@@ -114,18 +117,17 @@
                 font-size: 0.78em;
             }
         }
-
         .nav-link {
-            color: #6c757d; /* Default color for inactive links */
+            color: #6c757d;
             transition: all 0.2s;
         }
         .nav-link.active {
-            background-color: #007bff; /* Blue background for active */
-            color: white; /* White text for contrast */
+            background-color: #007bff;
+            color: white;
             font-weight: 500;
         }
         .nav-link:hover {
-            background-color: #f8f9fa; /* Light gray on hover for inactive */
+            background-color: #f8f9fa;
             color: #007bff;
         }
     </style>
@@ -172,6 +174,9 @@
                 </a>
                 <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="tasks">
                     <i class="fas fa-tasks me-2"></i> All Tasks
+                </a>
+                <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="recurring">
+                    <i class="fas fa-redo me-2"></i> Recurring Events
                 </a>
                 <a href="#" class="nav-link d-block py-2 px-3 rounded mb-2" data-page="profile">
                     <i class="fas fa-user me-2"></i> Profile
@@ -317,6 +322,19 @@
                     <div class="all-tasks-container overflow-auto" style="max-height: 70vh;" id="all-tasks-container"></div>
                 </div>
             </div>
+
+            <!-- Recurring Events Page -->
+            <div id="recurring-page" class="page-content d-none">
+                <div class="container bg-white p-4 rounded shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="mb-0">Recurring Events</h2>
+                        <button class="btn btn-primary btn-sm" id="add-recurring-btn">
+                            <i class="fas fa-plus me-1"></i> Add Recurring Event
+                        </button>
+                    </div>
+                    <div id="recurring-events-container" class="overflow-auto" style="max-height: 70vh;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -374,6 +392,133 @@
         </div>
     </div>
 
+    <!-- Recurring Event Modal -->
+    <div class="modal fade" id="recurringModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Recurring Event</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="recurringForm">
+                        <input type="hidden" id="recurringId">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="recurringTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Person Name</label>
+                            <input type="text" class="form-control" id="recurringPersonName" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="recurringStartTime">
+                            </div>
+                            <div class="col">
+                                <label class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="recurringEndTime">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="recurringType">
+                                <option value="call">Call</option>
+                                <option value="meeting">Meeting</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Details</label>
+                            <textarea class="form-control" id="recurringDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Recurrence Pattern</label>
+                            <select class="form-select" id="recurrencePattern" required>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly (Specific Date)</option>
+                                <option value="monthly-day">Monthly (Specific Day)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 d-none" id="weekly-options">
+                            <label class="form-label">Days of the Week</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-sun" value="0">
+                                <label class="form-check-label">Sunday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-mon" value="1">
+                                <label class="form-check-label">Monday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-tue" value="2">
+                                <label class="form-check-label">Tuesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-wed" value="3">
+                                <label class="form-check-label">Wednesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-thu" value="4">
+                                <label class="form-check-label">Thursday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-fri" value="5">
+                                <label class="form-check-label">Friday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="week-sat" value="6">
+                                <label class="form-check-label">Saturday</label>
+                            </div>
+                        </div>
+                        <div class="mb-3 d-none" id="monthly-date-options">
+                            <label class="form-label">Day of the Month</label>
+                            <input type="number" class="form-control" id="monthlyDate" min="1" max="31" required>
+                        </div>
+                        <div class="mb-3 d-none" id="monthly-day-options">
+                            <label class="form-label">Week and Day</label>
+                            <div class="row">
+                                <div class="col">
+                                    <select class="form-select" id="monthlyWeek">
+                                        <option value="1">First</option>
+                                        <option value="2">Second</option>
+                                        <option value="3">Third</option>
+                                        <option value="4">Fourth</option>
+                                        <option value="last">Last</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <select class="form-select" id="monthlyDay">
+                                        <option value="0">Sunday</option>
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="recurringStartDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date (Optional)</label>
+                            <input type="date" class="form-control" id="recurringEndDate">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="saveRecurringBtn">Save Event</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Options Modal -->
     <div class="modal fade" id="editOptionsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -413,47 +558,45 @@
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
-                                <input type="time" class="form-control" id="followStartTime" required>
-                            </div>
-                            <div class="col">
-                                <label class="form-label">End Time</label>
-                                <input type="time" class="form-control" id="followEndTime" required>
-                            </div>
+                            <input type="time" class="form-control" id="followStartTime" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Type</label>
-                            <select class="form-select" id="followType" required>
-                                <option value="call">Call</option>
-                                <option value="meeting">Meeting</option>
-                            </select>
+                        <div class="col">
+                            <label class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="followEndTime" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Task Details</label>
-                            <textarea class="form-control" id="followDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Follow-up Date</label>
-                            <input type="date" class="form-control" id="followUpDate" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
-                </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" id="followType" required>
+                            <option value="call">Call</option>
+                            <option value="meeting">Meeting</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Task Details</label>
+                        <textarea class="form-control" id="followDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Follow-up Date</label>
+                        <input type="date" class="form-control" id="followUpDate" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
             </div>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Replace the <script> section with this updated version -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-    
+
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC87g6-ZLkXW9bPFy3Kn0ZASKYG-EiRArE",
@@ -464,13 +607,13 @@
             appId: "1:911745257961:web:2759656a91df70fd5dbb78",
             measurementId: "G-9K4SXKD384"
         };
-    
+
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
-    
+
         // App logic
         $(() => {
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -478,12 +621,14 @@
             let selectedDate = new Date();
             let selectedTask = null;
             let tasks = {};
+            let recurringEvents = {};
             let currentUser = null;
             let userProfileData = {};
             const taskModal = new bootstrap.Modal('#taskModal');
+            const recurringModal = new bootstrap.Modal('#recurringModal');
             const editOptionsModal = new bootstrap.Modal('#editOptionsModal');
             const followUpModal = new bootstrap.Modal('#followUpModal');
-    
+
             // Auth state listener
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -493,16 +638,18 @@
                     await loadUserProfile();
                     updateProfileDisplay();
                     loadUserTasks();
+                    loadRecurringEvents();
                     $('#login-form')[0].reset();
                 } else {
                     currentUser = null;
                     $('#login-section').removeClass('d-none');
                     $('#app-container').addClass('d-none');
                     tasks = {};
+                    recurringEvents = {};
                     selectedTask = null;
                 }
             });
-    
+
             // Profile Management
             const loadUserProfile = async () => {
                 if (!currentUser) return;
@@ -517,7 +664,7 @@
                 };
                 if (!docSnap.exists()) await setDoc(profileRef, userProfileData);
             };
-    
+
             const saveUserProfile = async () => {
                 if (!currentUser) return false;
                 const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
@@ -535,7 +682,7 @@
                     return false;
                 }
             };
-    
+
             const updateProfileDisplay = () => {
                 if (!currentUser) return;
                 $('#profile-name').text(userProfileData.name || 'User Name');
@@ -544,7 +691,7 @@
                 $('#profile-email-input').val(userProfileData.email || '');
                 $('#profile-gender').val(userProfileData.gender || '');
                 $('#profile-phone').val(userProfileData.phone || '');
-    
+
                 const updatePic = (initial, image, container) => {
                     if (userProfileData.photoURL) {
                         initial.addClass('d-none');
@@ -557,14 +704,14 @@
                 updatePic($('#profile-pic-initial'), $('#profile-pic-image'), $('#profile-pic-container'));
                 updatePic($('#profile-pic-preview-initial'), $('#profile-pic-preview-image'), $('#profile-pic-preview'));
             };
-    
+
             const uploadProfilePicture = async (file) => {
                 if (!currentUser) return null;
                 const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
                 await uploadBytes(storageRef, file);
                 return await getDownloadURL(storageRef);
             };
-    
+
             // Task Management
             const loadUserTasks = () => {
                 if (!currentUser) return;
@@ -575,7 +722,7 @@
                     if ($('#tasks-page').hasClass('active')) renderAllTasks();
                 });
             };
-    
+
             const saveTasks = async (date, taskList) => {
                 if (!currentUser) return;
                 const tasksRef = doc(db, 'users', currentUser.uid, 'tasks', date);
@@ -585,7 +732,7 @@
                     console.error(`Error saving tasks for ${date}:`, error);
                 }
             };
-    
+
             const findTask = (taskId) => {
                 for (const date in tasks) {
                     const task = tasks[date].find(t => t.id == taskId);
@@ -593,18 +740,117 @@
                 }
                 return null;
             };
-    
+
+            // Recurring Events Management
+            const loadRecurringEvents = () => {
+                if (!currentUser) return;
+                onSnapshot(collection(db, 'users', currentUser.uid, 'recurringEvents'), snapshot => {
+                    recurringEvents = {};
+                    snapshot.forEach(doc => recurringEvents[doc.id] = doc.data());
+                    renderCalendar();
+                    if ($('#recurring-page').hasClass('active')) renderRecurringEvents();
+                });
+            };
+
+            const saveRecurringEvent = async (eventId, eventData) => {
+                if (!currentUser) return;
+                const eventRef = doc(db, 'users', currentUser.uid, 'recurringEvents', eventId);
+                try {
+                    await setDoc(eventRef, eventData, { merge: true });
+                } catch (error) {
+                    console.error(`Error saving recurring event ${eventId}:`, error);
+                }
+            };
+
+            const deleteRecurringEvent = async (eventId) => {
+                if (!currentUser) return;
+                const eventRef = doc(db, 'users', currentUser.uid, 'recurringEvents', eventId);
+                try {
+                    await deleteDoc(eventRef);
+                } catch (error) {
+                    console.error(`Error deleting recurring event ${eventId}:`, error);
+                }
+            };
+
+            // Calculate Recurring Event Instances
+            const getRecurringInstances = (date) => {
+                const instances = [];
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDayOfMonth = new Date(year, month, 1);
+                const lastDayOfMonth = new Date(year, month + 1, 0);
+
+                Object.entries(recurringEvents).forEach(([id, event]) => {
+                    const startDate = new Date(event.startDate);
+                    const endDate = event.endDate ? new Date(event.endDate) : null;
+                    const pattern = event.pattern;
+
+                    const isWithinRange = (d) => (!endDate || d <= endDate) && d >= startDate && d >= firstDayOfMonth && d <= lastDayOfMonth;
+
+                    if (pattern === 'daily') {
+                        for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+                            if (isWithinRange(d)) {
+                                instances.push({ eventId: id, date: new Date(d), task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true } });
+                            }
+                        }
+                    } else if (pattern === 'weekly') {
+                        const days = event.days || [];
+                        for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+                            if (days.includes(d.getDay()) && isWithinRange(d)) {
+                                instances.push({ eventId: id, date: new Date(d), task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true } });
+                            }
+                        }
+                    } else if (pattern === 'monthly') {
+                        const day = event.day;
+                        const targetDate = new Date(year, month, day);
+                        if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
+                            instances.push({ eventId: id, date: new Date(targetDate), task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true } });
+                        }
+                    } else if (pattern === 'monthly-day') {
+                        const week = event.week;
+                        const day = event.day;
+                        let targetDate;
+                        if (week === 'last') {
+                            const lastDay = new Date(year, month + 1, 0);
+                            targetDate = new Date(lastDay);
+                            targetDate.setDate(lastDay.getDate() - ((lastDay.getDay() - day + 7) % 7));
+                        } else {
+                            const firstDay = new Date(year, month, 1);
+                            targetDate = new Date(year, month, 1 + (week - 1) * 7);
+                            targetDate.setDate(targetDate.getDate() + ((day - targetDate.getDay() + 7) % 7));
+                        }
+                        if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
+                            instances.push({ eventId: id, date: new Date(targetDate), task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true } });
+                        }
+                    }
+                });
+
+                return instances;
+            };
+
             // Calendar Rendering
             const renderCalendar = () => {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 $('#current-month').text(`${monthNames[month]} ${year}`);
-    
+
                 const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 let date = 1;
                 let calendarBody = '';
-    
+
+                // Combine tasks and recurring events
+                const monthTasks = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = formatDate(new Date(year, month, d));
+                    monthTasks[dateStr] = tasks[dateStr] || [];
+                }
+                getRecurringInstances(currentDate).forEach(({ date, task }) => {
+                    const dateStr = formatDate(date);
+                    monthTasks[dateStr] = monthTasks[dateStr] || [];
+                    monthTasks[dateStr].push(task);
+                });
+
                 for (let i = 0; i < 6 && date <= daysInMonth; i++) {
                     calendarBody += '<tr>';
                     for (let j = 0; j < 7; j++) {
@@ -616,7 +862,7 @@
                                 'calendar-day',
                                 isSameDay(new Date(year, month, date), new Date()) ? 'today' : '',
                                 isSameDay(new Date(year, month, date), selectedDate) ? 'selected' : '',
-                                tasks[dateStr]?.length > 0 ? 'has-tasks' : ''
+                                monthTasks[dateStr]?.length > 0 ? 'has-tasks' : ''
                             ].filter(Boolean).join(' ');
                             calendarBody += `<td class="${classes}" data-date="${dateStr}"><div>${date}</div></td>`;
                             date++;
@@ -627,16 +873,20 @@
                 $('#calendar-body').html(calendarBody);
                 updateTasksPanel();
             };
-    
+
             const updateTasksPanel = () => {
                 const dateStr = formatDate(selectedDate);
-                const dateTasks = tasks[dateStr] || [];
+                const dateTasks = (tasks[dateStr] || []).concat(
+                    getRecurringInstances(selectedDate)
+                        .filter(i => isSameDay(i.date, selectedDate))
+                        .map(i => i.task)
+                );
                 $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
                 $('#no-tasks-message').toggleClass('d-none', dateTasks.length > 0);
                 $('#tasks-list').html(dateTasks.map(task => `
-                    <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                    <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-is-recurring="${task.isRecurring || false}">
                         <div class="d-flex justify-content-between align-items-start">
-                            <div><span class="type-${task.type || 'call'} task-priority"></span><strong>${task.title}</strong></div>
+                            <div><span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span><strong>${task.title}</strong></div>
                             <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
                         </div>
                         ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
@@ -644,7 +894,7 @@
                 `).join(''));
                 $('#task-details').toggleClass('d-none', !selectedTask);
             };
-    
+
             const showTaskDetails = (task, taskDate) => {
                 selectedTask = task;
                 selectedDate = new Date(taskDate);
@@ -654,29 +904,13 @@
                 $('#task-status-badge').removeClass('bg-success bg-secondary')
                     .addClass(task.completed ? 'bg-success' : 'bg-secondary')
                     .text(task.completed ? 'Completed' : 'Pending');
-    
-                let combinedHistory = [...(task.history || [])];
-                if (task.followUpFrom) {
-                    let currentTask = task;
-                    while (currentTask.followUpFrom) {
-                        const originalTask = Object.values(tasks).flat().find(t => String(t.id) === String(currentTask.followUpFrom));
-                        if (originalTask?.history) {
-                            const filteredHistory = originalTask.history.filter(entry =>
-                                !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
-                            );
-                            combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-                        }
-                        currentTask = originalTask || currentTask;
-                    }
-                } else {
-                    combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-                }
-    
-                $('#history-list').html(combinedHistory.length ? `
+
+                const history = task.history || [];
+                $('#history-list').html(history.length ? `
                     <div class="table-responsive">
                         <table class="task-history-table table table-bordered">
                             <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                            <tbody>${combinedHistory.map(entry =>
+                            <tbody>${history.map(entry =>
                                 Object.entries(entry.changes || {}).map(([field, change], index) => `
                                     <tr>
                                         ${index === 0 ? `
@@ -692,114 +926,140 @@
                         </table>
                     </div>
                 ` : '<div class="text-muted small">No history available</div>');
-    
+
                 renderCalendar();
             };
-    
+
             const renderAllTasks = () => {
                 const container = $('#all-tasks-container').empty();
-                if (!currentUser || !Object.keys(tasks).length) {
+                if (!currentUser) {
                     container.html('<div class="alert alert-info">No tasks found</div>');
                     return;
                 }
-    
-                // Filter to only show original tasks (no follow-ups)
+
+                // Combine regular tasks and recurring events
                 const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
                     taskList.map(task => ({ date, task }))
-                ).filter(({ task }) => !task.followUpFrom); // Exclude follow-up tasks
-    
-                // Group by date and render
-                const tasksByDate = allTasks.reduce((acc, { date, task }) => {
+                ).filter(({ task }) => !task.followUpFrom);
+
+                // Add recurring event instances for the next 6 months
+                const startDate = new Date();
+                const endDate = new Date(startDate);
+                endDate.setMonth(endDate.getMonth() + 6);
+                const recurringTasks = [];
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    getRecurringInstances(d).forEach(({ date, task }) => {
+                        recurringTasks.push({ date: formatDate(date), task });
+                    });
+                }
+
+                const combinedTasks = [...allTasks, ...recurringTasks].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                const tasksByDate = combinedTasks.reduce((acc, { date, task }) => {
                     acc[date] = acc[date] || [];
                     acc[date].push(task);
                     return acc;
                 }, {});
-    
-                Object.keys(tasksByDate)
-                    .sort((a, b) => new Date(b) - new Date(a))
-                    .forEach(date => {
-                        const dateTasks = tasksByDate[date];
-                        if (!dateTasks.length) return;
-                        const dateHeader = $(`
-                            <div class="mb-4 p-3 bg-light rounded">
-                                <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
-                                <ul class="list-unstyled"></ul>
-                            </div>
+
+                Object.keys(tasksByDate).forEach(date => {
+                    const dateTasks = tasksByDate[date];
+                    if (!dateTasks.length) return;
+                    const dateHeader = $(`
+                        <div class="mb-4 p-3 bg-light rounded">
+                            <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
+                            <ul class="list-unstyled"></ul>
+                        </div>
+                    `);
+                    const taskList = dateHeader.find('ul');
+                    dateTasks.forEach(task => {
+                        const historyEntries = (task.history || []).map(entry => ({
+                            date: entry.date,
+                            action: entry.action,
+                            details: Object.entries(entry.changes || {}).map(([field, change]) => ({
+                                field,
+                                old: change.old ?? 'None',
+                                new: change.new ?? 'None'
+                            }))
+                        })).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                        taskList.append(`
+                            <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}" data-is-recurring="${task.isRecurring || false}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span>
+                                        <strong>${task.title}</strong>
+                                        <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
+                                    </div>
+                                    <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
+                                </div>
+                                ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
+                                <div class="task-history mt-3 ${historyEntries.length ? '' : 'd-none'}">
+                                    <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
+                                    <div class="table-responsive">
+                                        <table class="task-history-table table table-bordered">
+                                            <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
+                                            <tbody>${
+                                                historyEntries.map(entry =>
+                                                    entry.details.map((detail, index) => `
+                                                        <tr>
+                                                            ${index === 0 ? `
+                                                                <td rowspan="${entry.details.length}">${new Date(entry.date).toLocaleString()}</td>
+                                                                <td rowspan="${entry.details.length}">${entry.action}</td>
+                                                            ` : ''}
+                                                            <td>${detail.field}</td>
+                                                            <td><span class="text-danger text-decoration-line-through">${detail.old}</span></td>
+                                                            <td><span class="text-success">${detail.new}</span></td>
+                                                        </tr>
+                                                    `).join('')
+                                                ).join('')
+                                            }</tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </li>
                         `);
-                        const taskList = dateHeader.find('ul');
-                        dateTasks.forEach(task => {
-                            // Prepare history with follow-up details
-                            const historyEntries = (task.history || []).map(entry => {
-                                const changes = entry.changes || {};
-                                if (entry.action === 'Follow-up created') {
-                                    const followUpId = changes.followUpId?.new;
-                                    const followUp = findTask(followUpId);
-                                    return {
-                                        date: entry.date,
-                                        action: `Follow-up created: ${changes.followUpTitle?.new || 'Untitled'}`,
-                                        details: [
-                                            { field: 'Date', old: '', new: changes.followUpDate?.new || 'N/A' },
-                                            { field: 'Time', old: '', new: changes.followUpTime?.new || 'N/A' },
-                                            { field: 'Status', old: '', new: followUp?.task.completed ? 'Completed' : 'Pending' }
-                                        ]
-                                    };
-                                }
-                                return {
-                                    date: entry.date,
-                                    action: entry.action,
-                                    details: Object.entries(changes).map(([field, change]) => ({
-                                        field,
-                                        old: change.old ?? 'None',
-                                        new: change.new ?? 'None'
-                                    }))
-                                };
-                            }).sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-                            taskList.append(`
-                                <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span class="type-${task.type || 'call'} task-priority"></span>
-                                            <strong>${task.title}</strong>
-                                            <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
-                                        </div>
-                                        <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
-                                    </div>
-                                    ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
-                                    <div class="task-history mt-3 ${historyEntries.length ? '' : 'd-none'}">
-                                        <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
-                                        <div class="table-responsive">
-                                            <table class="task-history-table table table-bordered">
-                                                <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                                                <tbody>${
-                                                    historyEntries.map(entry =>
-                                                        entry.details.map((detail, index) => `
-                                                            <tr>
-                                                                ${index === 0 ? `
-                                                                    <td rowspan="${entry.details.length}">${new Date(entry.date).toLocaleString()}</td>
-                                                                    <td rowspan="${entry.details.length}">${entry.action}</td>
-                                                                ` : ''}
-                                                                <td>${detail.field}</td>
-                                                                <td><span class="text-danger text-decoration-line-through">${detail.old}</span></td>
-                                                                <td><span class="text-success">${detail.new}</span></td>
-                                                            </tr>
-                                                        `).join('')
-                                                    ).join('')
-                                                }</tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </li>
-                            `);
-                        });
-                        container.append(dateHeader);
                     });
+                    container.append(dateHeader);
+                });
             };
-    
+
+            const renderRecurringEvents = () => {
+                const container = $('#recurring-events-container').empty();
+                if (!Object.keys(recurringEvents).length) {
+                    container.html('<div class="alert alert-info">No recurring events found</div>');
+                    return;
+                }
+
+                Object.entries(recurringEvents).forEach(([id, event]) => {
+                    const patternDesc = event.pattern === 'daily' ? 'Daily' :
+                        event.pattern === 'weekly' ? `Weekly on ${event.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}` :
+                        event.pattern === 'monthly' ? `Monthly on day ${event.day}` :
+                        `Monthly on ${event.week === 'last' ? 'last' : ['first', 'second', 'third', 'fourth'][event.week - 1]} ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][event.day]}`;
+                    const dateRange = event.endDate ? `from ${new Date(event.startDate).toLocaleDateString()} to ${new Date(event.endDate).toLocaleDateString()}` : `from ${new Date(event.startDate).toLocaleDateString()}`;
+                    container.append(`
+                        <div class="card mb-3" data-event-id="${id}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">${event.title}</h5>
+                                        <p class="mb-1 text-muted">${patternDesc} ${dateRange}</p>
+                                        <p class="mb-0 text-muted small">${event.description || 'No description'}</p>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-secondary me-1 edit-recurring-btn"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger delete-recurring-btn"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            };
+
             // Utility Functions
             const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
             const formatDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    
+
             // Event Handlers
             $('#login-form').submit(async (e) => {
                 e.preventDefault();
@@ -811,52 +1071,65 @@
                     $('#login-password').val('');
                 }
             });
-    
+
             $('.logout-btn').click(async () => {
                 await signOut(auth);
                 window.location.reload();
             });
-    
+
             $('#prev-month').click(() => {
                 currentDate.setMonth(currentDate.getMonth() - 1);
                 renderCalendar();
             });
-    
+
             $('#next-month').click(() => {
                 currentDate.setMonth(currentDate.getMonth() + 1);
                 renderCalendar();
             });
-    
+
             $('#today-btn').click(() => {
                 currentDate = selectedDate = new Date();
                 renderCalendar();
             });
-    
+
             $(document).on('click', '.calendar-day:not(.empty)', (e) => {
                 selectedDate = new Date($(e.currentTarget).data('date'));
                 selectedTask = null;
                 renderCalendar();
             });
-    
+
             $(document).on('click', '.task-item', function() {
                 const taskId = $(this).data('task-id');
+                const isRecurring = $(this).data('is-recurring') === true;
                 const taskDate = $(this).data('task-date') || formatDate(selectedDate);
-                const task = tasks[taskDate]?.find(t => t.id === taskId);
-                if (task) {
-                    if ($('#tasks-page').hasClass('active')) {
-                        showPage('calendar-page');
+
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    const event = recurringEvents[eventId];
+                    if (event) {
+                        if ($('#tasks-page').hasClass('active')) {
+                            showPage('calendar-page');
+                        }
+                        showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
                     }
-                    showTaskDetails(task, taskDate);
+                } else {
+                    const task = tasks[taskDate]?.find(t => t.id == taskId);
+                    if (task) {
+                        if ($('#tasks-page').hasClass('active')) {
+                            showPage('calendar-page');
+                        }
+                        showTaskDetails(task, taskDate);
+                    }
                 }
             });
-    
+
             $('#add-task-btn, #add-task-global-btn').click(() => {
                 $('#taskForm')[0].reset();
                 $('#taskId').val('');
                 $('#taskDate').val(formatDate(selectedDate));
                 taskModal.show();
             });
-    
+
             $('#saveTaskBtn').click(async () => {
                 const taskId = $('#taskId').val();
                 const taskDate = $('#taskDate').val();
@@ -870,12 +1143,12 @@
                     completed: false,
                     history: []
                 };
-    
+
                 if (!taskData.title || !taskData.personName) return alert('Title and Person Name are required');
                 tasks[taskDate] = tasks[taskDate] || [];
                 const existingIndex = taskId ? tasks[taskDate].findIndex(t => t.id == taskId) : -1;
                 const oldTask = existingIndex >= 0 ? tasks[taskDate][existingIndex] : null;
-    
+
                 const changes = oldTask ? {
                     ...(oldTask.personName !== taskData.personName && { personName: { old: oldTask.personName, new: taskData.personName } }),
                     ...(oldTask.title !== taskData.title && { title: { old: oldTask.title, new: taskData.title } }),
@@ -891,86 +1164,255 @@
                     time: { new: `${taskData.time.start} - ${taskData.time.end}` },
                     description: { new: taskData.description || 'None' }
                 };
-    
+
                 taskData.history = oldTask?.history || [];
                 taskData.followUps = oldTask?.followUps || [];
                 if (Object.keys(changes).length) {
                     taskData.history.unshift({ date: new Date().toISOString(), action: taskId ? 'Task updated' : 'Task created', changes });
                 }
-    
+
                 if (existingIndex >= 0) tasks[taskDate][existingIndex] = taskData;
                 else tasks[taskDate].push(taskData);
-    
+
                 await saveTasks(taskDate, tasks[taskDate]);
                 taskModal.hide();
                 renderCalendar();
                 showTaskDetails(taskData, taskDate);
                 $('#taskForm')[0].reset();
             });
-    
+
+            $('#add-recurring-btn').click(() => {
+                $('#recurringForm')[0].reset();
+                $('#recurringId').val('');
+                $('#weekly-options, #monthly-date-options, #monthly-day-options').addClass('d-none');
+                recurringModal.show();
+            });
+
+            $('#recurrencePattern').change(function() {
+                const pattern = $(this).val();
+                $('#weekly-options, #monthly-date-options, #monthly-day-options').addClass('d-none');
+                if (pattern === 'weekly') {
+                    $('#weekly-options').removeClass('d-none');
+                } else if (pattern === 'monthly') {
+                    $('#monthly-date-options').removeClass('d-none');
+                } else if (pattern === 'monthly-day') {
+                    $('#monthly-day-options').removeClass('d-none');
+                }
+            });
+
+            $('#saveRecurringBtn').click(async () => {
+                const eventId = $('#recurringId').val() || String(Date.now());
+                const pattern = $('#recurrencePattern').val();
+                let eventData = {
+                    personName: $('#recurringPersonName').val(),
+                    title: $('#recurringTitle').val(),
+                    time: { start: $('#recurringStartTime').val(), end: $('#recurringEndTime').val() },
+                    type: $('#recurringType').val(),
+                    description: $('#recurringDescription').val(),
+                    startDate: $('#recurringStartDate').val(),
+                    endDate: $('#recurringEndDate').val() || null,
+                    pattern,
+                    completed: false,
+                    history: recurringEvents[eventId]?.history || []
+                };
+
+                if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
+                    return alert('Please fill all required fields');
+                }
+
+                if (pattern === 'weekly') {
+                    eventData.days = [];
+                    $('#weekly-options input:checked').each(function() {
+                        eventData.days.push(parseInt($(this).val()));
+                    });
+                    if (!eventData.days.length) return alert('Please select at least one day');
+                } else if (pattern === 'monthly') {
+                    eventData.day = parseInt($('#monthlyDate').val());
+                    if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
+                } else if (pattern === 'monthly-day') {
+                    eventData.week = $('#monthlyWeek').val();
+                    eventData.day = parseInt($('#monthlyDay').val());
+                }
+
+                const oldEvent = recurringEvents[eventId];
+                const changes = oldEvent ? {
+                    ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
+                    ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
+                    ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
+                    ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
+                        time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
+                    }),
+                    ...(oldEvent.description !== eventData.description && { description: { old: oldEvent.description || 'None', new: eventData.description || 'None' } }),
+                    ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
+                    ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
+                    ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
+                } : {
+                    personName: { new: eventData.personName },
+                    title: { new: eventData.title },
+                    type: { new: eventData.type },
+                    time: { new: `${eventData.time.start} - ${eventData.time.end}` },
+                    description: { new: eventData.description || 'None' },
+                    startDate: { new: eventData.startDate },
+                    endDate: { new: eventData.endDate || 'None' },
+                    pattern: { new: eventData.pattern }
+                };
+
+                if (Object.keys(changes).length) {
+                    eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
+                }
+
+                await saveRecurringEvent(eventId, eventData);
+                recurringModal.hide();
+                renderCalendar();
+                $('#recurringForm')[0].reset();
+            });
+
+            $(document).on('click', '.edit-recurring-btn', function() {
+                const eventId = $(this).closest('.card').data('event-id');
+                const event = recurringEvents[eventId];
+                if (!event) return;
+
+                $('#recurringId').val(eventId);
+                $('#recurringPersonName').val(event.personName);
+                $('#recurringTitle').val(event.title);
+                $('#recurringStartTime').val(event.time?.start || '');
+                $('#recurringEndTime').val(event.time?.end || '');
+                $('#recurringType').val(event.type);
+                $('#recurringDescription').val(event.description || '');
+                $('#recurringStartDate').val(event.startDate);
+                $('#recurringEndDate').val(event.endDate || '');
+                $('#recurrencePattern').val(event.pattern).trigger('change');
+
+                if (event.pattern === 'weekly') {
+                    event.days.forEach(day => $(`#week-${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][day]}`).prop('checked', true));
+                } else if (event.pattern === 'monthly') {
+                    $('#monthlyDate').val(event.day);
+                } else if (event.pattern === 'monthly-day') {
+                    $('#monthlyWeek').val(event.week);
+                    $('#monthlyDay').val(event.day);
+                }
+
+                recurringModal.show();
+            });
+
+            $(document).on('click', '.delete-recurring-btn', async function() {
+                const eventId = $(this).closest('.card').data('event-id');
+                if (confirm('Delete this recurring event?')) {
+                    await deleteRecurringEvent(eventId);
+                    renderCalendar();
+                }
+            });
+
             $('#edit-task-btn').click(() => {
                 if (!selectedTask) return;
                 editOptionsModal.show();
-                $('#editOptionsModal').data({ 'task-id': selectedTask.id, 'task-date': formatDate(selectedDate) });
+                $('#editOptionsModal').data({
+                    'task-id': selectedTask.id,
+                    'task-date': formatDate(selectedDate),
+                    'is-recurring': selectedTask.isRecurring || false
+                });
             });
-    
+
             $('#editTaskDetailsBtn').click(() => {
-                const { taskId, taskDate } = $('#editOptionsModal').data();
-                if (!tasks[taskDate]) {
-                    console.error(`No tasks found for date: ${taskDate}`);
-                    return;
-                }
-                const task = tasks[taskDate].find(t => t.id == taskId);
-                if (task) {
-                    $('#taskId').val(task.id);
-                    $('#taskDate').val(taskDate);
-                    $('#personName').val(task.personName);
-                    $('#taskTitle').val(task.title);
-                    $('#taskStartTime').val(task.time?.start || '');
-                    $('#taskEndTime').val(task.time?.end || '');
-                    $('#taskType').val(task.type);
-                    $('#taskDescription').val(task.description || '');
-                    taskModal.show();
+                const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    const event = recurringEvents[eventId];
+                    if (event) {
+                        $('#recurringId').val(eventId);
+                        $('#recurringPersonName').val(event.personName);
+                        $('#recurringTitle').val(event.title);
+                        $('#recurringStartTime').val(event.time?.start || '');
+                        $('#recurringEndTime').val(event.time?.end || '');
+                        $('#recurringType').val(event.type);
+                        $('#recurringDescription').val(event.description || '');
+                        $('#recurringStartDate').val(event.startDate);
+                        $('#recurringEndDate').val(event.endDate || '');
+                        $('#recurrencePattern').val(event.pattern).trigger('change');
+
+                        if (event.pattern === 'weekly') {
+                            event.days.forEach(day => $(`#week-${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][day]}`).prop('checked', true));
+                        } else if (event.pattern === 'monthly') {
+                            $('#monthlyDate').val(event.day);
+                        } else if (event.pattern === 'monthly-day') {
+                            $('#monthlyWeek').val(event.week);
+                            $('#monthlyDay').val(event.day);
+                        }
+
+                        recurringModal.show();
+                    }
                 } else {
-                    console.error(`Task with ID ${taskId} not found on ${taskDate}`);
+                    if (!tasks[taskDate]) {
+                        console.error(`No tasks found for date: ${taskDate}`);
+                        return;
+                    }
+                    const task = tasks[taskDate].find(t => t.id == taskId);
+                    if (task) {
+                        $('#taskId').val(task.id);
+                        $('#taskDate').val(taskDate);
+                        $('#personName').val(task.personName);
+                        $('#taskTitle').val(task.title);
+                        $('#taskStartTime').val(task.time?.start || '');
+                        $('#taskEndTime').val(task.time?.end || '');
+                        $('#taskType').val(task.type);
+                        $('#taskDescription').val(task.description || '');
+                        taskModal.show();
+                    }
                 }
                 editOptionsModal.hide();
             });
-    
+
             $('#delete-task-btn').click(async () => {
                 if (!selectedTask || !confirm('Delete this task?')) return;
-                const dateStr = formatDate(selectedDate);
-                tasks[dateStr] = tasks[dateStr].filter(t => t.id !== selectedTask.id);
-                await saveTasks(dateStr, tasks[dateStr]);
+                if (selectedTask.isRecurring) {
+                    const eventId = selectedTask.id.split('_')[0];
+                    await deleteRecurringEvent(eventId);
+                } else {
+                    const dateStr = formatDate(selectedDate);
+                    tasks[dateStr] = tasks[dateStr].filter(t => t.id !== selectedTask.id);
+                    await saveTasks(dateStr, tasks[dateStr]);
+                }
                 selectedTask = null;
                 renderCalendar();
             });
-    
+
             $('#markCompletedBtn').click(async () => {
-                const { taskId, taskDate } = $('#editOptionsModal').data();
-                if (!tasks[taskDate]) {
-                    console.error(`No tasks found for date: ${taskDate}`);
-                    return;
-                }
-                const task = tasks[taskDate].find(t => t.id == taskId);
-                if (task) {
-                    task.completed = true;
-                    task.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
-                    await saveTasks(taskDate, tasks[taskDate]);
-                    renderCalendar();
-                    showTaskDetails(task, taskDate);
+                const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    const event = recurringEvents[eventId];
+                    if (event) {
+                        event.completed = true;
+                        event.history = event.history || [];
+                        event.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
+                        await saveRecurringEvent(eventId, event);
+                        renderCalendar();
+                        showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
+                    }
                 } else {
-                    console.error(`Task with ID ${taskId} not found on ${taskDate}`);
+                    if (!tasks[taskDate]) {
+                        console.error(`No tasks found for date: ${taskDate}`);
+                        return;
+                    }
+                    const task = tasks[taskDate].find(t => t.id == taskId);
+                    if (task) {
+                        task.completed = true;
+                        task.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
+                        await saveTasks(taskDate, tasks[taskDate]);
+                        renderCalendar();
+                        showTaskDetails(task, taskDate);
+                    }
                 }
                 editOptionsModal.hide();
             });
-    
+
             $('#openFollowUpModalBtn').click(() => {
                 $('#originalTaskId').val($('#editOptionsModal').data('task-id'));
+                $('#editOptionsModal').data('is-recurring') ? $('#followType').val(recurringEvents[$('#originalTaskId').val().split('_')[0]]?.type || 'call') : null;
                 followUpModal.show();
                 editOptionsModal.hide();
             });
-    
+
             $('#saveFollowUpBtn').click(async () => {
                 const taskId = $('#originalTaskId').val();
                 const taskDate = $('#followUpDate').val();
@@ -985,11 +1427,20 @@
                     followUpFrom: taskId,
                     history: []
                 };
-    
+
                 if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
-                const original = findTask(taskId);
+
+                const isRecurring = $('#editOptionsModal').data('is-recurring');
+                let original;
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    original = { task: recurringEvents[eventId], date: taskDate };
+                } else {
+                    original = findTask(taskId);
+                }
+
                 if (!original) return;
-    
+
                 followUpData.history.push({
                     date: new Date().toISOString(),
                     action: 'Follow-up created',
@@ -1002,10 +1453,10 @@
                         completed: { old: original.task.completed, new: false }
                     }
                 });
-    
+
                 tasks[taskDate] = tasks[taskDate] || [];
                 tasks[taskDate].push(followUpData);
-    
+
                 original.task.history = original.task.history || [];
                 original.task.history.unshift({
                     date: new Date().toISOString(),
@@ -1019,28 +1470,36 @@
                 });
                 original.task.followUps = original.task.followUps || [];
                 original.task.followUps.push({ id: followUpData.id, date: taskDate });
-    
-                await Promise.all([
-                    saveTasks(taskDate, tasks[taskDate]),
-                    saveTasks(original.date, tasks[original.date])
-                ]);
-    
+
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    await Promise.all([
+                        saveTasks(taskDate, tasks[taskDate]),
+                        saveRecurringEvent(eventId, original.task)
+                    ]);
+                } else {
+                    await Promise.all([
+                        saveTasks(taskDate, tasks[taskDate]),
+                        saveTasks(original.date, tasks[original.date])
+                    ]);
+                }
+
                 followUpModal.hide();
                 renderCalendar();
                 showTaskDetails(original.task, original.date);
                 $('#followUpForm')[0].reset();
             });
-    
+
             // Profile Handlers
             $('#edit-profile-btn, .nav-link[data-page="profile"]').click((e) => {
                 e.preventDefault();
                 showPage('profile-page');
             });
-    
+
             $('#cancel-profile-btn').click(() => showPage('calendar-page'));
-    
+
             $('#change-profile-pic-btn').click(() => $('#profile-picture-input').click());
-    
+
             $('#profile-picture-input').change(async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1057,7 +1516,7 @@
                     $('#change-profile-pic-btn').html('<i class="fas fa-camera me-1"></i> Change Photo');
                 }
             });
-    
+
             $('#profile-form').submit(async (e) => {
                 e.preventDefault();
                 userProfileData.name = $('#profile-name-input').val();
@@ -1076,7 +1535,7 @@
                     $('#save-profile-btn').html('Save Changes');
                 }
             });
-    
+
             // Navigation
             const showPage = (pageId) => {
                 $('.page-content').removeClass('active').addClass('d-none');
@@ -1085,13 +1544,14 @@
                 $(`.nav-link[data-page="${pageId.replace('-page', '')}"]`).addClass('active');
                 if (pageId === 'tasks-page') renderAllTasks();
                 else if (pageId === 'calendar-page') renderCalendar();
+                else if (pageId === 'recurring-page') renderRecurringEvents();
             };
-    
+
             $(document).on('click', '.nav-link', (e) => {
                 e.preventDefault();
                 showPage($(e.currentTarget).data('page') + '-page');
             });
-    
+
             // Initialize
             showPage('calendar-page');
             renderCalendar();

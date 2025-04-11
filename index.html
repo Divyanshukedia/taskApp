@@ -75,7 +75,7 @@
             background-color: #ff9500;
         }
         .type-recurring {
-            background-color: #6f42c1; /* Purple for recurring events */
+            background-color: #6f42c1;
         }
         .profile-pic {
             width: 80px;
@@ -558,33 +558,34 @@
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
-                            <input type="time" class="form-control" id="followStartTime" required>
+                                <input type="time" class="form-control" id="followStartTime" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="followEndTime" required>
+                            </div>
                         </div>
-                        <div class="col">
-                            <label class="form-label">End Time</label>
-                            <input type="time" class="form-control" id="followEndTime" required>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" id="followType" required>
+                                <option value="call">Call</option>
+                                <option value="meeting">Meeting</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <select class="form-select" id="followType" required>
-                            <option value="call">Call</option>
-                            <option value="meeting">Meeting</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Task Details</label>
-                        <textarea class="form-control" id="followDescription" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Follow-up Date</label>
-                        <input type="date" class="form-control" id="followUpDate" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+                        <div class="mb-3">
+                            <label class="form-label">Task Details</label>
+                            <textarea class="form-control" id="followDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Follow-up Date</label>
+                            <input type="date" class="form-control" id="followUpDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+                </div>
             </div>
         </div>
     </div>
@@ -735,7 +736,7 @@
 
             const findTask = (taskId) => {
                 for (const date in tasks) {
-                    const task = tasks[date].find(t => t.id == taskId);
+                    const task = tasks[date].find(t => String(t.id) === String(taskId));
                     if (task) return { task, date };
                 }
                 return null;
@@ -839,7 +840,6 @@
                 let date = 1;
                 let calendarBody = '';
 
-                // Combine tasks and recurring events
                 const monthTasks = {};
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = formatDate(new Date(year, month, d));
@@ -905,24 +905,52 @@
                     .addClass(task.completed ? 'bg-success' : 'bg-secondary')
                     .text(task.completed ? 'Completed' : 'Pending');
 
-                const history = task.history || [];
-                $('#history-list').html(history.length ? `
+                let combinedHistory = [...(task.history || [])];
+                if (task.followUpFrom) {
+                    let currentTask = task;
+                    while (currentTask.followUpFrom) {
+                        const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
+                        if (originalTask?.task?.history) {
+                            const filteredHistory = originalTask.task.history.filter(entry =>
+                                !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
+                            );
+                            combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                        }
+                        currentTask = originalTask.task || currentTask;
+                    }
+                } else if (task.followUps?.length) {
+                    task.followUps.forEach(followUp => {
+                        const followUpTask = findTask(followUp.id);
+                        if (followUpTask?.task?.history) {
+                            combinedHistory = [...combinedHistory, ...followUpTask.task.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                        }
+                    });
+                }
+
+                combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                $('#history-list').html(combinedHistory.length ? `
                     <div class="table-responsive">
                         <table class="task-history-table table table-bordered">
                             <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                            <tbody>${history.map(entry =>
-                                Object.entries(entry.changes || {}).map(([field, change], index) => `
+                            <tbody>${combinedHistory.map(entry => {
+                                const changes = { ...entry.changes };
+                                if (task.isRecurring && !('description' in changes) && entry.action !== 'Follow-up created') {
+                                    changes.description = { old: task.description || 'None', new: task.description || 'None' };
+                                }
+                                delete changes.followUpId; // Remove id from display
+                                return Object.entries(changes).map(([field, change], index) => `
                                     <tr>
                                         ${index === 0 ? `
-                                            <td rowspan="${Object.keys(entry.changes).length}">${new Date(entry.date).toLocaleString()}</td>
-                                            <td rowspan="${Object.keys(entry.changes).length}">${entry.action}</td>
+                                            <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
+                                            <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
                                         ` : ''}
                                         <td>${field}</td>
                                         <td>${change.old !== undefined ? `<span class="text-danger text-decoration-line-through">${change.old ?? 'None'}</span>` : ''}</td>
                                         <td><span class="text-success">${change.new ?? 'None'}</span></td>
                                     </tr>
-                                `).join('')
-                            ).join('')}</tbody>
+                                `).join('');
+                            }).join('')}</tbody>
                         </table>
                     </div>
                 ` : '<div class="text-muted small">No history available</div>');
@@ -937,12 +965,10 @@
                     return;
                 }
 
-                // Combine regular tasks and recurring events
                 const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
                     taskList.map(task => ({ date, task }))
                 ).filter(({ task }) => !task.followUpFrom);
 
-                // Add recurring event instances for the next 6 months
                 const startDate = new Date();
                 const endDate = new Date(startDate);
                 endDate.setMonth(endDate.getMonth() + 6);
@@ -953,7 +979,7 @@
                     });
                 }
 
-                const combinedTasks = [...allTasks, ...recurringTasks].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const combinedTasks = [...allTasks, ...recurringTasks].sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 const tasksByDate = combinedTasks.reduce((acc, { date, task }) => {
                     acc[date] = acc[date] || [];
@@ -972,15 +998,29 @@
                     `);
                     const taskList = dateHeader.find('ul');
                     dateTasks.forEach(task => {
-                        const historyEntries = (task.history || []).map(entry => ({
-                            date: entry.date,
-                            action: entry.action,
-                            details: Object.entries(entry.changes || {}).map(([field, change]) => ({
-                                field,
-                                old: change.old ?? 'None',
-                                new: change.new ?? 'None'
-                            }))
-                        })).sort((a, b) => new Date(b.date) - new Date(a.date));
+                        let combinedHistory = [...(task.history || [])];
+                        if (task.followUpFrom) {
+                            let currentTask = task;
+                            while (currentTask.followUpFrom) {
+                                const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
+                                if (originalTask?.task?.history) {
+                                    const filteredHistory = originalTask.task.history.filter(entry =>
+                                        !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
+                                    );
+                                    combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                                }
+                                currentTask = originalTask.task || currentTask;
+                            }
+                        } else if (task.followUps?.length) {
+                            task.followUps.forEach(followUp => {
+                                const followUpTask = findTask(followUp.id);
+                                if (followUpTask?.task?.history) {
+                                    combinedHistory = [...combinedHistory, ...followUpTask.task.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                                }
+                            });
+                        }
+
+                        combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
                         taskList.append(`
                             <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}" data-is-recurring="${task.isRecurring || false}">
@@ -993,25 +1033,30 @@
                                     <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
                                 </div>
                                 ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
-                                <div class="task-history mt-3 ${historyEntries.length ? '' : 'd-none'}">
+                                <div class="task-history mt-3 ${combinedHistory.length ? '' : 'd-none'}">
                                     <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
                                     <div class="table-responsive">
                                         <table class="task-history-table table table-bordered">
                                             <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
                                             <tbody>${
-                                                historyEntries.map(entry =>
-                                                    entry.details.map((detail, index) => `
+                                                combinedHistory.map(entry => {
+                                                    const changes = { ...entry.changes };
+                                                    if (task.isRecurring && !('description' in changes) && entry.action !== 'Follow-up created') {
+                                                        changes.description = { old: task.description || 'None', new: task.description || 'None' };
+                                                    }
+                                                    delete changes.followUpId; // Remove id from display
+                                                    return Object.entries(changes).map((detail, index) => `
                                                         <tr>
                                                             ${index === 0 ? `
-                                                                <td rowspan="${entry.details.length}">${new Date(entry.date).toLocaleString()}</td>
-                                                                <td rowspan="${entry.details.length}">${entry.action}</td>
+                                                                <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
+                                                                <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
                                                             ` : ''}
-                                                            <td>${detail.field}</td>
-                                                            <td><span class="text-danger text-decoration-line-through">${detail.old}</span></td>
-                                                            <td><span class="text-success">${detail.new}</span></td>
+                                                            <td>${detail[0]}</td>
+                                                            <td><span class="text-danger text-decoration-line-through">${detail[1].old ?? 'None'}</span></td>
+                                                            <td><span class="text-success">${detail[1].new ?? 'None'}</span></td>
                                                         </tr>
-                                                    `).join('')
-                                                ).join('')
+                                                    `).join('');
+                                                }).join('')
                                             }</tbody>
                                         </table>
                                     </div>
@@ -1113,7 +1158,7 @@
                         showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
                     }
                 } else {
-                    const task = tasks[taskDate]?.find(t => t.id == taskId);
+                    const task = tasks[taskDate]?.find(t => String(t.id) === String(taskId));
                     if (task) {
                         if ($('#tasks-page').hasClass('active')) {
                             showPage('calendar-page');
@@ -1213,7 +1258,8 @@
                     endDate: $('#recurringEndDate').val() || null,
                     pattern,
                     completed: false,
-                    history: recurringEvents[eventId]?.history || []
+                    history: recurringEvents[eventId]?.history || [],
+                    followUps: recurringEvents[eventId]?.followUps || []
                 };
 
                 if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
@@ -1346,7 +1392,7 @@
                         console.error(`No tasks found for date: ${taskDate}`);
                         return;
                     }
-                    const task = tasks[taskDate].find(t => t.id == taskId);
+                    const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
                     if (task) {
                         $('#taskId').val(task.id);
                         $('#taskDate').val(taskDate);
@@ -1394,7 +1440,7 @@
                         console.error(`No tasks found for date: ${taskDate}`);
                         return;
                     }
-                    const task = tasks[taskDate].find(t => t.id == taskId);
+                    const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
                     if (task) {
                         task.completed = true;
                         task.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
@@ -1465,7 +1511,8 @@
                         followUpId: { new: followUpData.id },
                         followUpTitle: { new: followUpData.title },
                         followUpDate: { new: taskDate },
-                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` }
+                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
+                        description: { new: followUpData.description || 'None' }
                     }
                 });
                 original.task.followUps = original.task.followUps || [];
@@ -1536,25 +1583,60 @@
                 }
             });
 
-            // Navigation
-            const showPage = (pageId) => {
-                $('.page-content').removeClass('active').addClass('d-none');
-                $(`#${pageId}`).addClass('active').removeClass('d-none');
+                        // Navigation
+                        const showPage = (pageId) => {
+                $('.page-content').addClass('d-none').removeClass('active');
+                $(`#${pageId}`).removeClass('d-none').addClass('active');
                 $('.nav-link').removeClass('active');
-                $(`.nav-link[data-page="${pageId.replace('-page', '')}"]`).addClass('active');
-                if (pageId === 'tasks-page') renderAllTasks();
-                else if (pageId === 'calendar-page') renderCalendar();
-                else if (pageId === 'recurring-page') renderRecurringEvents();
+                $(`.nav-link[data-page="${pageId.split('-')[0]}"]`).addClass('active');
+
+                if (pageId === 'calendar-page') {
+                    renderCalendar();
+                } else if (pageId === 'tasks-page') {
+                    renderAllTasks();
+                } else if (pageId === 'recurring-page') {
+                    renderRecurringEvents();
+                } else if (pageId === 'profile-page') {
+                    updateProfileDisplay();
+                }
             };
 
-            $(document).on('click', '.nav-link', (e) => {
+            $('.nav-link').click(function(e) {
                 e.preventDefault();
-                showPage($(e.currentTarget).data('page') + '-page');
+                const page = $(this).data('page');
+                showPage(`${page}-page`);
             });
 
-            // Initialize
-            showPage('calendar-page');
+            // Initial setup
             renderCalendar();
+            showPage('calendar-page');
+
+            // Ensure history consistency on page load
+            const ensureHistoryConsistency = () => {
+                Object.keys(tasks).forEach(date => {
+                    tasks[date].forEach(task => {
+                        if (!task.history) task.history = [];
+                        if (task.followUps) {
+                            task.followUps.forEach(followUp => {
+                                const followUpTask = findTask(followUp.id);
+                                if (followUpTask && !followUpTask.task.followUpFrom) {
+                                    followUpTask.task.followUpFrom = task.id;
+                                }
+                            });
+                        }
+                    });
+                });
+                Object.values(recurringEvents).forEach(event => {
+                    if (!event.history) event.history = [];
+                });
+            };
+
+            ensureHistoryConsistency();
+
+            // Handle window resize for responsive calendar
+            $(window).resize(() => {
+                renderCalendar();
+            });
         });
     </script>
 </body>

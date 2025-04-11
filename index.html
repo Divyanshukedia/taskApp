@@ -50,13 +50,14 @@
             <div class="modal-body">
               <form id="taskForm">
                 <input type="hidden" id="taskId">
-                <div class="mb-3">
-                  <label class="form-label">Person Name</label>
-                  <input type="text" class="form-control" id="personName">
-                </div>
+
                 <div class="mb-3">
                   <label class="form-label">Title</label>
                   <input type="text" class="form-control" id="taskTitle">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Person Name</label>
+                  <input type="text" class="form-control" id="personName">
                 </div>
                 <div class="row mb-3">
                   <div class="col">
@@ -76,7 +77,7 @@
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Description</label>
+                  <label class="form-label">Task Details</label>
                   <textarea class="form-control" id="taskDescription" rows="3"></textarea>
                 </div>
                 <div class="mb-3">
@@ -119,14 +120,15 @@
               <div class="modal-body">
                   <form id="followUpForm">
                       <input type="hidden" id="originalTaskId">
-                      <div class="mb-3">
-                          <label class="form-label">Person Name</label>
-                          <input type="text" class="form-control" id="followPersonName" required>
-                      </div>
+
                       <div class="mb-3">
                           <label class="form-label">Title</label>
                           <input type="text" class="form-control" id="followTitle" required>
                       </div>
+                      <div class="mb-3">
+                        <label class="form-label">Person Name</label>
+                        <input type="text" class="form-control" id="followPersonName" required>
+                    </div>
                       <div class="row mb-3">
                           <div class="col">
                               <label class="form-label">Start Time</label>
@@ -145,7 +147,7 @@
                           </select>
                       </div>
                       <div class="mb-3">
-                          <label class="form-label">Description</label>
+                          <label class="form-label">Task Details</label>
                           <textarea class="form-control" id="followDescription" rows="3" required></textarea>
                       </div>
                       <div class="mb-3">

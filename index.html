@@ -609,6 +609,7 @@
     </div>
 
     <!-- Follow-up Modal -->
+    <!-- Follow-up Modal -->
     <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -648,7 +649,7 @@
                             <label class="form-label">Task Details</label>
                             <textarea class="form-control" id="followDescription" rows="3"></textarea>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 follow-up-date-container">
                             <label class="form-label">Follow-up Date</label>
                             <input type="date" class="form-control" id="followUpDate" required>
                         </div>
@@ -1674,7 +1675,6 @@
                 const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
                 let originalTask;
 
-                // Fetch the original task or recurring event
                 if (isRecurring) {
                     const eventId = taskId.split('_')[0];
                     originalTask = recurringEvents[eventId];
@@ -1684,7 +1684,6 @@
 
                 if (!originalTask) return;
 
-                // Populate follow-up modal fields with original task values
                 $('#originalTaskId').val(taskId);
                 $('#followTitle').val(originalTask.title || '');
                 $('#followPersonName').val(originalTask.personName || '');
@@ -1693,85 +1692,129 @@
                 $('#followType').val(originalTask.type || 'call');
                 $('#followDescription').val(''); // Leave description empty
 
+                // Adjust modal for recurring events
+                if (isRecurring) {
+                    $('#followUpModal .modal-title').text('Update Recurring Event');
+                    $('#followUpDate').closest('.mb-3').addClass('d-none'); // Hide date field
+                } else {
+                    $('#followUpModal .modal-title').text('Add Follow-up Task');
+                    $('#followUpDate').closest('.mb-3').removeClass('d-none'); // Show date field
+                }
+
                 followUpModal.show();
                 editOptionsModal.hide();
             });
 
             $('#saveFollowUpBtn').click(async () => {
                 const taskId = $('#originalTaskId').val();
-                const taskDate = $('#followUpDate').val();
-                const followUpData = {
-                    id: Date.now(),
-                    personName: $('#followPersonName').val(),
-                    title: $('#followTitle').val(),
-                    time: { start: $('#followStartTime').val(), end: $('#followEndTime').val() },
-                    type: $('#followType').val(),
-                    description: $('#followDescription').val(),
-                    completed: false,
-                    followUpFrom: taskId,
-                    history: []
-                };
-
-                if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
-
                 const isRecurring = $('#editOptionsModal').data('is-recurring');
-                let original;
-                if (isRecurring) {
-                    const eventId = taskId.split('_')[0];
-                    original = { task: recurringEvents[eventId], date: taskDate };
-                } else {
-                    original = findTask(taskId);
-                }
-
-                if (!original) return;
-
-                followUpData.history.push({
-                    date: new Date().toISOString(),
-                    action: 'Follow-up created',
-                    changes: {
-                        personName: { old: original.task.personName, new: followUpData.personName },
-                        title: { old: original.task.title, new: followUpData.title },
-                        type: { old: original.task.type, new: followUpData.type },
-                        time: { old: `${original.task.time.start || ''} - ${original.task.time.end || ''}`, new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                        description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
-                        completed: { old: original.task.completed, new: false }
-                    }
-                });
-
-                tasks[taskDate] = tasks[taskDate] || [];
-                tasks[taskDate].push(followUpData);
-
-                original.task.history = original.task.history || [];
-                original.task.history.unshift({
-                    date: new Date().toISOString(),
-                    action: 'Follow-up created',
-                    changes: {
-                        followUpId: { new: followUpData.id },
-                        followUpTitle: { new: followUpData.title },
-                        followUpDate: { new: taskDate },
-                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                        description: { new: followUpData.description || 'None' }
-                    }
-                });
-                original.task.followUps = original.task.followUps || [];
-                original.task.followUps.push({ id: followUpData.id, date: taskDate });
 
                 if (isRecurring) {
+                    // Handle recurring event update
                     const eventId = taskId.split('_')[0];
-                    await Promise.all([
-                        saveTasks(taskDate, tasks[taskDate]),
-                        saveRecurringEvent(eventId, original.task)
-                    ]);
+                    const event = recurringEvents[eventId];
+                    if (!event) return alert('Recurring event not found');
+
+                    const updatedData = {
+                        personName: $('#followPersonName').val(),
+                        title: $('#followTitle').val(),
+                        time: { start: $('#followStartTime').val(), end: $('#followEndTime').val() },
+                        type: $('#followType').val(),
+                        description: $('#followDescription').val(),
+                        startDate: event.startDate,
+                        endDate: event.endDate || null,
+                        pattern: event.pattern,
+                        completed: event.completed,
+                        history: event.history || [],
+                        followUps: event.followUps || []
+                    };
+
+                    if (!updatedData.title || !updatedData.personName) return alert('Please fill all required fields');
+
+                    // Calculate changes for history
+                    const changes = {
+                        ...(event.personName !== updatedData.personName && { personName: { old: event.personName, new: updatedData.personName } }),
+                        ...(event.title !== updatedData.title && { title: { old: event.title, new: updatedData.title } }),
+                        ...(event.type !== updatedData.type && { type: { old: event.type, new: updatedData.type } }),
+                        ...((event.time.start !== updatedData.time.start || event.time.end !== updatedData.time.end) && {
+                            time: { old: `${event.time.start || ''} - ${event.time.end || ''}`, new: `${updatedData.time.start} - ${updatedData.time.end}` }
+                        }),
+                        ...(event.description !== updatedData.description && { description: { old: event.description || 'None', new: updatedData.description || 'None' } })
+                    };
+
+                    if (Object.keys(changes).length) {
+                        updatedData.history.unshift({
+                            date: new Date().toISOString(),
+                            action: 'Follow-up update',
+                            changes
+                        });
+                    }
+
+                    await saveRecurringEvent(eventId, updatedData);
+                    recurringModal.hide();
+                    renderCalendar();
+                    showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
+                    // Handle regular task follow-up
+                    const taskDate = $('#followUpDate').val();
+                    const followUpData = {
+                        id: Date.now(),
+                        personName: $('#followPersonName').val(),
+                        title: $('#followTitle').val(),
+                        time: { start: $('#followStartTime').val(), end: $('#followEndTime').val() },
+                        type: $('#followType').val(),
+                        description: $('#followDescription').val(),
+                        completed: false,
+                        followUpFrom: taskId,
+                        history: []
+                    };
+
+                    if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
+
+                    const original = findTask(taskId);
+                    if (!original) return;
+
+                    followUpData.history.push({
+                        date: new Date().toISOString(),
+                        action: 'Follow-up created',
+                        changes: {
+                            personName: { old: original.task.personName, new: followUpData.personName },
+                            title: { old: original.task.title, new: followUpData.title },
+                            type: { old: original.task.type, new: followUpData.type },
+                            time: { old: `${original.task.time.start || ''} - ${original.task.time.end || ''}`, new: `${followUpData.time.start} - ${followUpData.time.end}` },
+                            description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
+                            completed: { old: original.task.completed, new: false }
+                        }
+                    });
+
+                    tasks[taskDate] = tasks[taskDate] || [];
+                    tasks[taskDate].push(followUpData);
+
+                    original.task.history = original.task.history || [];
+                    original.task.history.unshift({
+                        date: new Date().toISOString(),
+                        action: 'Follow-up created',
+                        changes: {
+                            followUpId: { new: followUpData.id },
+                            followUpTitle: { new: followUpData.title },
+                            followUpDate: { new: taskDate },
+                            followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
+                            description: { new: followUpData.description || 'None' }
+                        }
+                    });
+                    original.task.followUps = original.task.followUps || [];
+                    original.task.followUps.push({ id: followUpData.id, date: taskDate });
+
                     await Promise.all([
                         saveTasks(taskDate, tasks[taskDate]),
                         saveTasks(original.date, tasks[original.date])
                     ]);
+
+                    renderCalendar();
+                    showTaskDetails(original.task, original.date);
                 }
 
                 followUpModal.hide();
-                renderCalendar();
-                showTaskDetails(original.task, original.date);
                 $('#followUpForm')[0].reset();
             });
 

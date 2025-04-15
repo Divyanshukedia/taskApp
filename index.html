@@ -938,6 +938,7 @@
 
             // Calendar Rendering
             const renderCalendar = () => {
+                
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 $('#current-month').text(`${monthNames[month]} ${year}`);
@@ -1003,6 +1004,7 @@
             };
 
             const showTaskDetails = (task, taskDate) => {
+                console.log('Showing task details:', task, taskDate);   
                 selectedTask = task;
                 selectedDate = new Date(taskDate);
                 $('#task-detail-title').text(task.title);
@@ -1066,187 +1068,224 @@
             };
 
             const renderAllTasks = () => {
-            const container = $('#all-tasks-container').empty();
-            if (!currentUser) {
-                container.html('<div class="alert alert-info">No tasks found</div>');
-                return;
-            }
+                const container = $('#all-tasks-container').empty();
+                if (!currentUser) {
+                    container.html('<div class="alert alert-info">No tasks found</div>');
+                    return;
+                }
 
-            // Search and Sort UI
-            container.html(`
-                <div class="mb-4">
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="task-search" placeholder="Search tasks by title...">
-                        <button class="btn btn-outline-secondary" id="clear-search"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <select class="form-select w-50 me-2" id="task-sort-by">
-                            <option value="date">Date</option>
-                            <option value="title">Title</option>
-                            <option value="status">Status</option>
-                        </select>
-                        <button class="btn btn-outline-primary" id="toggle-sort-order" data-order="asc">
-                            <i class="fas fa-sort-up"></i> Asc
-                        </button>
-                    </div>
-                </div>
-                <div id="tasks-listing" class="overflow-auto" style="max-height: 60vh;"></div>
-            `);
-
-            const listing = $('#tasks-listing');
-            const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
-                taskList.map(task => ({ date, task }))
-            ).filter(({ task }) => !task.followUpFrom);
-
-            const startDate = new Date();
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + 6);
-            const recurringTasks = [];
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                getRecurringInstances(d).forEach(({ date, task }) => {
-                    recurringTasks.push({ date: formatDate(date), task });
-                });
-            }
-
-            const combinedTasks = [...allTasks, ...recurringTasks];
-
-            const renderTasks = (tasksToRender) => {
-                listing.empty();
-                const tasksByDate = tasksToRender.reduce((acc, { date, task }) => {
-                    acc[date] = acc[date] || [];
-                    acc[date].push(task);
-                    return acc;
-                }, {});
-
-                $.each(tasksByDate, (date, dateTasks) => {
-                    if (!dateTasks.length) return;
-                    const dateHeader = $(`
-                        <div class="mb-4 p-3 bg-light rounded">
-                            <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
-                            <ul class="list-unstyled"></ul>
+                container.html(`
+                    <div class="mb-4">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="task-search" placeholder="Search tasks by title...">
+                            <button class="btn btn-outline-secondary" id="clear-search"><i class="fas fa-times"></i></button>
                         </div>
-                    `);
-                    const taskList = dateHeader.find('ul');
-                    $.each(dateTasks, (index, task) => {
-                        let combinedHistory = [...(task.history || [])];
-                        if (task.followUpFrom) {
-                            let currentTask = task;
-                            while (currentTask.followUpFrom) {
-                                const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
-                                if (originalTask?.task?.history) {
-                                    const filteredHistory = originalTask.task.history.filter(entry =>
-                                        !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
-                                    );
-                                    combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                        <div class="d-flex justify-content-between">
+                            <select class="form-select w-50 me-2" id="task-sort-by">
+                                <option value="date">Date</option>
+                                <option value="title">Title</option>
+                                <option value="status">Status</option>
+                            </select>
+                            <button class="btn btn-outline-primary" id="toggle-sort-order" data-order="asc">
+                                <i class="fas fa-sort-up"></i> Asc
+                            </button>
+                        </div>
+                    </div>
+                    <div id="tasks-listing" class="overflow-auto" style="max-height: 60vh;"></div>
+                `);
+
+                const listing = $('#tasks-listing');
+                const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
+                    taskList.map(task => ({ date, task }))
+                ).filter(({ task }) => !task.followUpFrom);
+
+                const startDate = new Date();
+                const endDate = new Date(startDate);
+                endDate.setMonth(endDate.getMonth() + 6);
+                const recurringTasks = [];
+                const seenEventIds = new Set();
+                Object.entries(recurringEvents).forEach(([eventId, event]) => {
+                    if (!seenEventIds.has(eventId)) {
+                        recurringTasks.push({
+                            date: event.startDate,
+                            task: { ...event, id: `${eventId}_${event.startDate}`, isRecurring: true }
+                        });
+                        seenEventIds.add(eventId);
+                    }
+                });
+
+                const combinedTasks = [...allTasks, ...recurringTasks];
+
+                const renderTasks = (tasksToRender) => {
+                    listing.empty();
+                    const tasksByDate = tasksToRender.reduce((acc, { date, task }) => {
+                        acc[date] = acc[date] || [];
+                        acc[date].push(task);
+                        return acc;
+                    }, {});
+
+                    $.each(tasksByDate, (date, dateTasks) => {
+                        if (!dateTasks.length) return;
+                        const dateHeader = $(`
+                            <div class="mb-4 p-3 bg-light rounded">
+                                <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
+                                <ul class="list-unstyled"></ul>
+                            </div>
+                        `);
+                        const taskList = dateHeader.find('ul');
+                        $.each(dateTasks, (index, task) => {
+                            let combinedHistory = [];
+                            let historyHeader = '';
+                            if (task.isRecurring) {
+                                const eventId = task.id.split('_')[0];
+                                const event = recurringEvents[eventId];
+                                if (event?.history) {
+                                    combinedHistory = [...event.history];
                                 }
-                                currentTask = originalTask.task || currentTask;
+                                const startDateStr = new Date(event.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                                const endDateStr = event.endDate
+                                    ? new Date(event.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                    : 'No end date';
+                                historyHeader = `Recurring task from ${startDateStr} to ${endDateStr}`;
+                            } else {
+                                combinedHistory = [...(task.history || [])];
+                                historyHeader = 'Task history';
                             }
-                        } else if (task.followUps?.length) {
-                            task.followUps.forEach(followUp => {
-                                const followUpTask = findTask(followUp.id);
-                                if (followUpTask?.task?.history) {
-                                    combinedHistory = [...combinedHistory, ...followUpTask.task.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                            if (task.followUpFrom) {
+                                let currentTask = task;
+                                while (currentTask.followUpFrom) {
+                                    const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
+                                    if (originalTask?.task?.history) {
+                                        const filteredHistory = originalTask.task.history.filter(entry =>
+                                            !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
+                                        );
+                                        combinedHistory = [...filteredHistory, ...combinedHistory];
+                                    }
+                                    currentTask = originalTask.task || currentTask;
+                                }
+                            } else if (task.followUps?.length) {
+                                task.followUps.forEach(followUp => {
+                                    const followUpTask = findTask(followUp.id);
+                                    if (followUpTask?.task?.history) {
+                                        combinedHistory = [...combinedHistory, ...followUpTask.task.history];
+                                    }
+                                });
+                            }
+
+                            const uniqueHistory = [];
+                            const seen = new Set();
+                            combinedHistory.forEach(entry => {
+                                const normalizedDate = new Date(entry.date);
+                                normalizedDate.setMilliseconds(0);
+                                const normalizedChanges = JSON.stringify(
+                                    Object.fromEntries(
+                                        Object.entries(entry.changes || {})
+                                            .sort()
+                                            .map(([key, value]) => [
+                                                key,
+                                                typeof value === 'object' && value !== null
+                                                    ? Object.fromEntries(Object.entries(value).sort())
+                                                    : value
+                                            ])
+                                    )
+                                );
+                                const key = `${normalizedDate.toISOString()}_${entry.action}_${normalizedChanges}`;
+                                if (!seen.has(key)) {
+                                    seen.add(key);
+                                    uniqueHistory.push({ ...entry, date: normalizedDate.toISOString() });
                                 }
                             });
-                        }
 
-                        combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            uniqueHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                        taskList.append(`
-                            <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}" data-is-recurring="${task.isRecurring || false}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span>
-                                        <strong>${task.title}</strong>
-                                        <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
+                            taskList.append(`
+                                <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}" data-is-recurring="${task.isRecurring || false}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span>
+                                            <strong>${task.title}</strong>
+                                            <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
+                                        </div>
+                                        <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
                                     </div>
-                                    <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
-                                </div>
-                                ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
-                                <div class="task-history mt-3 ${combinedHistory.length ? '' : 'd-none'}">
-                                    <h6 class="small"><i class="fas fa-history me-1"></i>History</h6>
-                                    <div class="table-responsive">
-                                        <table class="task-history-table table table-bordered">
-                                            <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                                            <tbody>${
-                                                combinedHistory.map(entry => {
-                                                    const changes = { ...entry.changes };
-                                                    if (task.isRecurring && !('description' in changes) && entry.action !== 'Follow-up created') {
-                                                        changes.description = { old: task.description || 'None', new: task.description || 'None' };
-                                                    }
-                                                    delete changes.followUpId;
-                                                    return Object.entries(changes).map((detail, index) => `
-                                                        <tr>
-                                                            ${index === 0 ? `
-                                                                <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
-                                                                <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
-                                                            ` : ''}
-                                                            <td>${detail[0]}</td>
-                                                            <td><span class="text-danger text-decoration-line-through">${detail[1].old ?? 'None'}</span></td>
-                                                            <td><span class="text-success">${detail[1].new ?? 'None'}</span></td>
-                                                        </tr>
-                                                    `).join('');
-                                                }).join('')
-                                            }</tbody>
-                                        </table>
+                                    ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
+                                    <div class="task-history mt-3 ${uniqueHistory.length ? '' : 'd-none'}">
+                                        <h6 class="small history-card-header"><i class="fas fa-history me-1"></i>${historyHeader}</h6>
+                                        <div class="table-responsive">
+                                            <table class="task-history-table table table-bordered">
+                                                <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
+                                                <tbody>${
+                                                    uniqueHistory.map(entry => {
+                                                        const changes = { ...entry.changes };
+                                                        delete changes.followUpId;
+                                                        return Object.entries(changes).map(([field, change], index) => `
+                                                            <tr>
+                                                                ${index === 0 ? `
+                                                                    <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
+                                                                    <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
+                                                                ` : ''}
+                                                                <td>${field}</td>
+                                                                <td><span class="text-danger text-decoration-line-through">${change.old ?? 'None'}</span></td>
+                                                                <td><span class="text-success">${change.new ?? 'None'}</span></td>
+                                                            </tr>
+                                                        `).join('');
+                                                    }).join('')
+                                                }</tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
-                        `);
+                                </li>
+                            `);
+                        });
+                        listing.append(dateHeader);
                     });
-                    listing.append(dateHeader);
-                });
 
-                if (!tasksToRender.length) {
-                    listing.html('<div class="alert alert-info">No tasks match your search</div>');
-                }
-            };
-
-            // Initial render
-            renderTasks(combinedTasks);
-
-            // Search handler using jQuery
-            $('#task-search').on('input', function() {
-                const searchQuery = $(this).val().toLowerCase();
-                const filteredTasks = combinedTasks.filter(({ task }) => 
-                    task.title.toLowerCase().includes(searchQuery)
-                );
-                renderTasks(filteredTasks);
-            });
-
-            // Clear search
-            $('#clear-search').click(() => {
-                $('#task-search').val('');
-                renderTasks(combinedTasks);
-            });
-
-            // Sort handler using jQuery
-            $('#task-sort-by, #toggle-sort-order').on('change click', function() {
-                const sortBy = $('#task-sort-by').val();
-                const sortOrder = $('#toggle-sort-order').data('order') || 'asc';
-                if (this.id === 'toggle-sort-order') {
-                    const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-                    $('#toggle-sort-order').data('order', newOrder)
-                        .html(`<i class="fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'}"></i> ${newOrder === 'asc' ? 'Asc' : 'Desc'}`);
-                }
-
-                let sortedTasks = [...combinedTasks];
-                sortedTasks.sort((a, b) => {
-                    let comparison = 0;
-                    if (sortBy === 'date') {
-                        comparison = new Date(a.date) - new Date(b.date);
-                    } else if (sortBy === 'title') {
-                        comparison = a.task.title.localeCompare(b.task.title);
-                    } else if (sortBy === 'status') {
-                        comparison = (a.task.completed ? 1 : 0) - (b.task.completed ? 1 : 0);
+                    if (!tasksToRender.length) {
+                        listing.html('<div class="alert alert-info">No tasks match your search</div>');
                     }
-                    return sortOrder === 'asc' ? comparison : -comparison;
+                };
+
+                renderTasks(combinedTasks);
+
+                $('#task-search').on('input', function() {
+                    const searchQuery = $(this).val().toLowerCase();
+                    const filteredTasks = combinedTasks.filter(({ task }) => 
+                        task.title.toLowerCase().includes(searchQuery)
+                    );
+                    renderTasks(filteredTasks);
                 });
 
-                renderTasks(sortedTasks);
-            });
-        };
+                $('#clear-search').click(() => {
+                    $('#task-search').val('');
+                    renderTasks(combinedTasks);
+                });
 
+                $('#task-sort-by, #toggle-sort-order').on('change click', function() {
+                    const sortBy = $('#task-sort-by').val();
+                    const sortOrder = $('#toggle-sort-order').data('order') || 'asc';
+                    if (this.id === 'toggle-sort-order') {
+                        const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                        $('#toggle-sort-order').data('order', newOrder)
+                            .html(`<i class="fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'}"></i> ${newOrder === 'asc' ? 'Asc' : 'Desc'}`);
+                    }
+
+                    let sortedTasks = [...combinedTasks];
+                    sortedTasks.sort((a, b) => {
+                        let comparison = 0;
+                        if (sortBy === 'date') {
+                            comparison = new Date(a.date) - new Date(b.date);
+                        } else if (sortBy === 'title') {
+                            comparison = a.task.title.localeCompare(b.task.title);
+                        } else if (sortBy === 'status') {
+                            comparison = (a.task.completed ? 1 : 0) - (b.task.completed ? 1 : 0);
+                        }
+                        return sortOrder === 'asc' ? comparison : -comparison;
+                    });
+
+                    renderTasks(sortedTasks);
+                });
+            };
             const renderRecurringEvents = () => {
                 const container = $('#recurring-events-container').empty();
                 if (!Object.keys(recurringEvents).length) {

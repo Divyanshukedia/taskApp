@@ -250,9 +250,9 @@
             <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="recurring">
                 <i class="fas fa-redo me-2"></i> Recurring Events
             </a>
-            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="profile">
+            <!-- <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="profile">
                 <i class="fas fa-user me-2"></i> Profile
-            </a>
+            </a> -->
             </div>
             <div class="logout-btn py-2 px-3 rounded text-danger cursor-pointer">
             <i class="fas fa-sign-out-alt me-2"></i> Logout
@@ -1321,8 +1321,7 @@
             });
 
             $('#add-task-btn, #add-task-global-btn').click(() => {
-                $('#taskForm')[0].reset();
-                $('#taskId').val('');
+
                 $('#taskDate').val(formatDate(selectedDate));
                 taskModal.show();
             });
@@ -1376,6 +1375,7 @@
                 renderCalendar();
                 showTaskDetails(taskData, taskDate);
                 $('#taskForm')[0].reset();
+                $('#taskId').val('');
             });
 
             $('#add-recurring-btn').click(() => {
@@ -1605,8 +1605,28 @@
             });
 
             $('#openFollowUpModalBtn').click(() => {
-                $('#originalTaskId').val($('#editOptionsModal').data('task-id'));
-                $('#editOptionsModal').data('is-recurring') ? $('#followType').val(recurringEvents[$('#originalTaskId').val().split('_')[0]]?.type || 'call') : null;
+                const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
+                let originalTask;
+
+                // Fetch the original task or recurring event
+                if (isRecurring) {
+                    const eventId = taskId.split('_')[0];
+                    originalTask = recurringEvents[eventId];
+                } else {
+                    originalTask = tasks[taskDate]?.find(t => String(t.id) === String(taskId));
+                }
+
+                if (!originalTask) return;
+
+                // Populate follow-up modal fields with original task values
+                $('#originalTaskId').val(taskId);
+                $('#followTitle').val(originalTask.title || '');
+                $('#followPersonName').val(originalTask.personName || '');
+                $('#followStartTime').val(originalTask.time?.start || '');
+                $('#followEndTime').val(originalTask.time?.end || '');
+                $('#followType').val(originalTask.type || 'call');
+                $('#followDescription').val(''); // Leave description empty
+
                 followUpModal.show();
                 editOptionsModal.hide();
             });

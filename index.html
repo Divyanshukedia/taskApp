@@ -866,26 +866,49 @@
                     const endDate = event.endDate ? new Date(event.endDate) : null;
                     const pattern = event.pattern;
 
-                    const isWithinRange = (d) => (!endDate || d <= endDate) && d >= startDate && d >= firstDayOfMonth && d <= lastDayOfMonth;
+                    const isWithinRange = (d) => {
+                        const dDate = new Date(d);
+                        return (
+                            (!endDate || dDate <= endDate) &&
+                            dDate >= startDate &&
+                            dDate >= firstDayOfMonth &&
+                            dDate <= lastDayOfMonth
+                        );
+                    };
 
                     if (pattern === 'daily') {
-                        for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+                        // Start from the startDate or first day of the month, whichever is later
+                        const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
+                        for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
                             if (isWithinRange(d)) {
-                                instances.push({ eventId: id, date: new Date(d), task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true } });
+                                instances.push({
+                                    eventId: id,
+                                    date: new Date(d),
+                                    task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true }
+                                });
                             }
                         }
                     } else if (pattern === 'weekly') {
                         const days = event.days || [];
-                        for (let d = new Date(firstDayOfMonth); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
+                        const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
+                        for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
                             if (days.includes(d.getDay()) && isWithinRange(d)) {
-                                instances.push({ eventId: id, date: new Date(d), task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true } });
+                                instances.push({
+                                    eventId: id,
+                                    date: new Date(d),
+                                    task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true }
+                                });
                             }
                         }
                     } else if (pattern === 'monthly') {
                         const day = event.day;
                         const targetDate = new Date(year, month, day);
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
-                            instances.push({ eventId: id, date: new Date(targetDate), task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true } });
+                            instances.push({
+                                eventId: id,
+                                date: new Date(targetDate),
+                                task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true }
+                            });
                         }
                     } else if (pattern === 'monthly-day') {
                         const week = event.week;
@@ -901,7 +924,11 @@
                             targetDate.setDate(targetDate.getDate() + ((day - targetDate.getDay() + 7) % 7));
                         }
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
-                            instances.push({ eventId: id, date: new Date(targetDate), task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true } });
+                            instances.push({
+                                eventId: id,
+                                date: new Date(targetDate),
+                                task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true }
+                            });
                         }
                     }
                 });

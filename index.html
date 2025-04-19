@@ -1373,9 +1373,10 @@
                         if (taskData) {
                             selectedTask = taskData.task;
                             selectedDate = new Date(date);
+                            currentDate = new Date(date); // Update currentDate to the task's date
+                            renderCalendar(); // Render the calendar with the updated currentDate
                             showTaskDetails(taskData.task, date);
                             $('#task-details').removeClass('d-none');
-                            $('#tasks-date').text(formatDateDMY(selectedDate));
                             showPage('calendar-page');
                         }
                     });
@@ -1387,9 +1388,10 @@
                         if (event) {
                             selectedTask = { ...event, id: eventId, isRecurring: true };
                             selectedDate = new Date(event.startDate);
+                            currentDate = new Date(event.startDate); // Update currentDate
+                            renderCalendar(); // Render with correct month
                             showTaskDetails(selectedTask, event.startDate);
                             $('#task-details').removeClass('d-none');
-                            $('#tasks-date').text(`Recurring Event`);
                             showPage('calendar-page');
                         }
                     });

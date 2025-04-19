@@ -107,16 +107,16 @@
                 border-bottom: 1px solid #dee2e6;
             }
             .nav-link.active {
-                background-color: #007bff; /* Bootstrap primary blue */
-                color: white !important; /* Ensure text is white for contrast */
-                font-weight: 500; /* Slightly bolder text */
+                background-color: #007bff;
+                color: white !important;
+                font-weight: 500;
             }
             .nav-link {
-                color: #333; /* Default color for inactive items */
-                transition: all 0.2s ease; /* Smooth transition for hover/active */
+                color: #333;
+                transition: all 0.2s ease;
             }
             .nav-link:hover {
-                background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
+                background-color: rgba(0, 123, 255, 0.1);
                 color: #007bff;
             }
         }
@@ -129,19 +129,18 @@
             }
         }
         .nav-link.active {
-            background-color: #007bff; /* Bootstrap primary blue */
-            color: white !important; /* Ensure text is white for contrast */
-            font-weight: 500; /* Slightly bolder text */
+            background-color: #007bff;
+            color: white !important;
+            font-weight: 500;
         }
         .nav-link {
-            color: #333; /* Default color for inactive items */
-            transition: all 0.2s ease; /* Smooth transition for hover/active */
+            color: #333;
+            transition: all 0.2s ease;
         }
         .nav-link:hover {
-            background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
+            background-color: rgba(0, 123, 255, 0.1);
             color: #007bff;
         }
-
         @media (max-width: 991px) {
             .sidebar {
                 position: fixed;
@@ -157,26 +156,25 @@
                 transform: translateX(0);
             }
             .nav-link.active {
-                background-color: #007bff; /* Bootstrap primary blue */
-                color: white !important; /* Ensure text is white for contrast */
-                font-weight: 500; /* Slightly bolder text */
+                background-color: #007bff;
+                color: white !important;
+                font-weight: 500;
             }
             .nav-link {
-                color: #333; /* Default color for inactive items */
-                transition: all 0.2s ease; /* Smooth transition for hover/active */
+                color: #333;
+                transition: all 0.2s ease;
             }
             .nav-link:hover {
-                background-color: rgba(0, 123, 255, 0.1); /* Light blue hover effect */
+                background-color: rgba(0, 123, 255, 0.1);
                 color: #007bff;
             }
             #main-content {
-                margin-top: 50px; /* Space for header */
+                margin-top: 50px;
             }
             .close-sidebar-btn {
                 display: block;
             }
         }
-
         @media (min-width: 992px) {
             .sidebar {
                 position: static;
@@ -186,7 +184,7 @@
                 display: none;
             }
             #main-content {
-                margin-left: 250px; /* Match sidebar width */
+                margin-left: 250px;
                 margin-top: 0;
             }
             .close-sidebar-btn {
@@ -227,35 +225,32 @@
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <button class="btn btn-outline-danger mb-3 close-sidebar-btn d-lg-none" id="close-sidebar-btn">
-            <i class="fas fa-times"></i> Close
+                <i class="fas fa-times"></i> Close
             </button>
             <div class="text-center border-bottom pb-3 mb-3">
-            <div class="profile-pic" id="profile-pic-container">
-                <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
-                <img id="profile-pic-image" class="d-none" src="" alt="Profile">
-            </div>
-            <h5 id="profile-name" class="mb-1">User Name</h5>
-            <p id="profile-email" class="text-muted small mb-2">user@example.com</p>
-            <button class="btn btn-outline-primary btn-sm" id="edit-profile-btn">
-                <i class="fas fa-edit me-1"></i> Edit Profile
-            </button>
+                <div class="profile-pic" id="profile-pic-container">
+                    <div id="profile-pic-initial"><i class="fas fa-user"></i></div>
+                    <img id="profile-pic-image" class="d-none" src="" alt="Profile">
+                </div>
+                <h5 id="profile-name" class="mb-1">User Name</h5>
+                <p id="profile-email" class="text-muted small mb-2">user@example.com</p>
+                <button class="btn btn-outline-primary btn-sm" id="edit-profile-btn">
+                    <i class="fas fa-edit me-1"></i> Edit Profile
+                </button>
             </div>
             <div class="nav-links flex-grow-1 d-flex flex-column">
-            <a href="#" class="nav-link py-2 px-3 rounded mb-2 active" data-page="calendar">
-                <i class="fas fa-calendar me-2"></i> Calendar
-            </a>
-            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="tasks">
-                <i class="fas fa-tasks me-2"></i> All Tasks
-            </a>
-            <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="recurring">
-                <i class="fas fa-redo me-2"></i> Recurring Events
-            </a>
-            <!-- <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="profile">
-                <i class="fas fa-user me-2"></i> Profile
-            </a> -->
+                <a href="#" class="nav-link py-2 px-3 rounded mb-2 active" data-page="calendar">
+                    <i class="fas fa-calendar me-2"></i> Calendar
+                </a>
+                <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="tasks">
+                    <i class="fas fa-tasks me-2"></i> All Tasks
+                </a>
+                <a href="#" class="nav-link py-2 px-3 rounded mb-2" data-page="recurring">
+                    <i class="fas fa-redo me-2"></i> Recurring Events
+                </a>
             </div>
             <div class="logout-btn py-2 px-3 rounded text-danger cursor-pointer">
-            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                <i class="fas fa-sign-out-alt me-2"></i> Logout
             </div>
         </div>
 
@@ -310,8 +305,11 @@
                                             <button class="btn btn-sm btn-outline-secondary me-1" id="edit-task-btn">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" id="delete-task-btn">
+                                            <button class="btn btn-sm btn-outline-danger me-1" id="delete-task-btn">
                                                 <i class="fas fa-trash"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" id="view-history-btn">
+                                                <i class="fas fa-history"></i> View History
                                             </button>
                                         </div>
                                     </div>
@@ -321,8 +319,6 @@
                                             <span class="text-muted" id="task-time"></span>
                                         </div>
                                         <p id="task-description" class="mb-3"></p>
-                                        <h6><i class="fas fa-history me-1"></i>Task History</h6>
-                                        <div id="history-list"></div>
                                     </div>
                                 </div>
                             </div>
@@ -609,7 +605,6 @@
     </div>
 
     <!-- Follow-up Modal -->
-    <!-- Follow-up Modal -->
     <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -662,7 +657,33 @@
             </div>
         </div>
     </div>
-    <div id="sidebar-overlay" class="position-fixed top-0 left-0 w-100 h-100 bg-dark opacity-50 d-none" style="z-index: 1025;"></div>    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Task History Modal -->
+    <div class="modal fade" id="taskHistoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Task History</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="task-history-note"></p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead id="task-history-table-head"></thead>
+                            <tbody id="task-history-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar-overlay" class="position-fixed top-0 left-0 w-100 h-100 bg-dark opacity-50 d-none" style="z-index: 1025;"></div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -701,6 +722,7 @@
             const recurringModal = new bootstrap.Modal('#recurringModal');
             const editOptionsModal = new bootstrap.Modal('#editOptionsModal');
             const followUpModal = new bootstrap.Modal('#followUpModal');
+            const taskHistoryModal = new bootstrap.Modal('#taskHistoryModal');
 
             $('#toggle-sidebar-btn').click(() => {
                 $('#sidebar').addClass('active');
@@ -711,6 +733,7 @@
                 $('#sidebar').removeClass('active');
                 $('#sidebar-overlay').addClass('d-none');
             });
+
             // Auth state listener
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -878,7 +901,6 @@
                     };
 
                     if (pattern === 'daily') {
-                        // Start from the startDate or first day of the month, whichever is later
                         const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
                         for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
                             if (isWithinRange(d)) {
@@ -939,7 +961,6 @@
 
             // Calendar Rendering
             const renderCalendar = () => {
-                
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 $('#current-month').text(`${monthNames[month]} ${year}`);
@@ -1005,7 +1026,6 @@
             };
 
             const showTaskDetails = (task, taskDate) => {
-                console.log('Showing task details:', task, taskDate);   
                 selectedTask = task;
                 selectedDate = new Date(taskDate);
                 $('#task-detail-title').text(task.title);
@@ -1014,278 +1034,373 @@
                 $('#task-status-badge').removeClass('bg-success bg-secondary')
                     .addClass(task.completed ? 'bg-success' : 'bg-secondary')
                     .text(task.completed ? 'Completed' : 'Pending');
-
-                let combinedHistory = [...(task.history || [])];
-                if (task.followUpFrom) {
-                    let currentTask = task;
-                    while (currentTask.followUpFrom) {
-                        const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
-                        if (originalTask?.task?.history) {
-                            const filteredHistory = originalTask.task.history.filter(entry =>
-                                !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
-                            );
-                            combinedHistory = [...filteredHistory, ...combinedHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-                        }
-                        currentTask = originalTask.task || currentTask;
-                    }
-                } else if (task.followUps?.length) {
-                    task.followUps.forEach(followUp => {
-                        const followUpTask = findTask(followUp.id);
-                        if (followUpTask?.task?.history) {
-                            combinedHistory = [...combinedHistory, ...followUpTask.task.history].sort((a, b) => new Date(b.date) - new Date(a.date));
-                        }
-                    });
-                }
-
-                combinedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                $('#history-list').html(combinedHistory.length ? `
-                    <div class="table-responsive">
-                        <table class="task-history-table table table-bordered">
-                            <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                            <tbody>${combinedHistory.map(entry => {
-                                const changes = { ...entry.changes };
-                                if (task.isRecurring && !('description' in changes) && entry.action !== 'Follow-up created') {
-                                    changes.description = { old: task.description || 'None', new: task.description || 'None' };
-                                }
-                                delete changes.followUpId; // Remove id from display
-                                return Object.entries(changes).map(([field, change], index) => `
-                                    <tr>
-                                        ${index === 0 ? `
-                                            <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
-                                            <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
-                                        ` : ''}
-                                        <td>${field}</td>
-                                        <td>${change.old !== undefined ? `<span class="text-danger text-decoration-line-through">${change.old ?? 'None'}</span>` : ''}</td>
-                                        <td><span class="text-success">${change.new ?? 'None'}</span></td>
-                                    </tr>
-                                `).join('');
-                            }).join('')}</tbody>
-                        </table>
-                    </div>
-                ` : '<div class="text-muted small">No history available</div>');
-
                 renderCalendar();
             };
 
-            const renderAllTasks = () => {
-                const container = $('#all-tasks-container').empty();
-                if (!currentUser) {
-                    container.html('<div class="alert alert-info">No tasks found</div>');
-                    return;
+            const findRootTask = (taskId) => {
+                let currentTask = findTask(taskId);
+                while (currentTask && currentTask.task.followUpFrom) {
+                    currentTask = findTask(currentTask.task.followUpFrom);
+                    if (!currentTask) break;
                 }
+                return currentTask;
+            };
 
-                container.html(`
-                    <div class="mb-4">
-                        <div class="input-group mb-2">
-                            <input type="text" class="form-control" id="task-search" placeholder="Search tasks by title...">
-                            <button class="btn btn-outline-secondary" id="clear-search"><i class="fas fa-times"></i></button>
+            const getAllDescendantTasks = (rootTask, visited = new Set()) => {
+                if (!rootTask || visited.has(rootTask.task.id)) return [];
+                visited.add(rootTask.task.id);
+                let descendants = [rootTask];
+                if (rootTask.task.followUps) {
+                    rootTask.task.followUps.forEach(followUp => {
+                        const followUpTask = findTask(followUp.id);
+                        if (followUpTask) {
+                            descendants = descendants.concat(getAllDescendantTasks(followUpTask, visited));
+                        }
+                    });
+                }
+                return descendants;
+            };
+
+            const getRelatedTasks = (taskId) => {
+                const rootTask = findRootTask(taskId);
+                if (!rootTask) return [];
+                const allTasks = getAllDescendantTasks(rootTask);
+                allTasks.sort((a, b) => a.date.localeCompare(b.date));
+                return allTasks;
+            };
+            const renderHistoryTable = (historyItems, note) => {
+                $('#task-history-note').text(note);
+                $('#task-history-table-head').html(`
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Person Name</th>
+                        <th>Notes</th>
+                    </tr>
+                `);
+                const tbody = $('#task-history-table-body').empty();
+                historyItems.forEach(item => {
+                    const entryDate = new Date(item.date);
+                    const timeStr = item.time ? item.time : 'All day';
+                    const row = `
+                        <tr>
+                            <td>${entryDate.toLocaleDateString()}</td>
+                            <td>${timeStr}</td>
+                            <td>${item.type || 'N/A'}</td>
+                            <td>${item.personName || 'N/A'}</td>
+                            <td>${item.notes || 'No notes'}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+                if (!historyItems.length) {
+                    tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
+                }
+            };
+
+            // Updated click handler for view history button
+            $('#view-history-btn').click(() => {
+                if (!selectedTask) return;
+                let historyItems = [];
+                let note = '';
+                if (selectedTask.isRecurring) {
+                    // Handle recurring event
+                    const eventId = selectedTask.id.split('_')[0];
+                    const event = recurringEvents[eventId];
+                    if (event) {
+                        const startDateStr = new Date(event.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                        const endDateStr = event.endDate
+                            ? new Date(event.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                            : 'No end date';
+                        note = `Recurring task from ${startDateStr} to ${endDateStr}`;
+
+                        // Extract history entries from event.history
+                        historyItems = (event.history || [])
+                            .map(entry => {
+                                const changes = entry.changes || {};
+                                return {
+                                    date: entry.date,
+                                    time: changes.time ? changes.time.new || 'All day' : event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
+                                    type: changes.type ? changes.type.new || event.type || 'N/A' : event.type || 'N/A',
+                                    personName: changes.personName ? changes.personName.new || event.personName || 'N/A' : event.personName || 'N/A',
+                                    notes: changes.description ? changes.description.new || event.description || 'No notes' : event.description || 'No notes'
+                                };
+                            })
+                            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort in descending order
+                    }
+                } else {
+                    // Handle normal task with related tasks and follow-ups
+                    const relatedTasks = getRelatedTasks(selectedTask.id);
+                    note = 'Related Tasks and Follow-ups';
+                    historyItems = relatedTasks.map(({ task, date }) => ({
+                        date: date,
+                        time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
+                        type: task.type || 'N/A',
+                        personName: task.personName || 'N/A',
+                        notes: task.description || 'No notes'
+                    }));
+                }
+                renderHistoryTable(historyItems, note);
+                taskHistoryModal.show();
+            });
+
+            const formatDateDMY = (date) => {
+                const d = new Date(date);
+                return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+            };
+
+            const renderAllTasks = () => {
+                let html = `
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="input-group w-50">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="task-search" placeholder="Search by title, person, or notes">
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <select class="form-select w-50 me-2" id="task-sort-by">
-                                <option value="date">Date</option>
-                                <option value="title">Title</option>
-                                <option value="status">Status</option>
+                        <div class="input-group w-25">
+                            <label class="input-group-text" for="task-sort">Sort by</label>
+                            <select class="form-select" id="task-sort">
+                                <option value="date-desc" selected>Date (Latest First)</option>
+                                <option value="date-asc">Date (Earliest First)</option>
+                                <option value="title-asc">Title (A-Z)</option>
+                                <option value="title-desc">Title (Z-A)</option>
                             </select>
-                            <button class="btn btn-outline-primary" id="toggle-sort-order" data-order="asc">
-                                <i class="fas fa-sort-up"></i> Asc
-                            </button>
                         </div>
                     </div>
-                    <div id="tasks-listing" class="overflow-auto" style="max-height: 60vh;"></div>
-                `);
+                    <div id="tasks-content"></div>
+                `;
 
-                const listing = $('#tasks-listing');
-                const allTasks = Object.entries(tasks).flatMap(([date, taskList]) =>
-                    taskList.map(task => ({ date, task }))
-                ).filter(({ task }) => !task.followUpFrom);
+                $('#all-tasks-container').html(html);
 
-                const startDate = new Date();
-                const endDate = new Date(startDate);
-                endDate.setMonth(endDate.getMonth() + 6);
-                const recurringTasks = [];
-                const seenEventIds = new Set();
-                Object.entries(recurringEvents).forEach(([eventId, event]) => {
-                    if (!seenEventIds.has(eventId)) {
-                        recurringTasks.push({
-                            date: event.startDate,
-                            task: { ...event, id: `${eventId}_${event.startDate}`, isRecurring: true }
+                const renderTasksContent = () => {
+                    let contentHtml = '';
+                    const searchQuery = $('#task-search').val().toLowerCase();
+                    const sortOption = $('#task-sort').val();
+                    const processedRecurringIds = new Set();
+
+                    // Prepare regular tasks
+                    let regularTasks = [];
+                    Object.keys(tasks).forEach(date => {
+                        (tasks[date] || []).filter(task => !task.isRecurring && !task.eventId).forEach(task => {
+                            regularTasks.push({ date, task });
                         });
-                        seenEventIds.add(eventId);
-                    }
-                });
-
-                const combinedTasks = [...allTasks, ...recurringTasks];
-
-                const renderTasks = (tasksToRender) => {
-                    listing.empty();
-                    const tasksByDate = tasksToRender.reduce((acc, { date, task }) => {
-                        acc[date] = acc[date] || [];
-                        acc[date].push(task);
-                        return acc;
-                    }, {});
-
-                    $.each(tasksByDate, (date, dateTasks) => {
-                        if (!dateTasks.length) return;
-                        const dateHeader = $(`
-                            <div class="mb-4 p-3 bg-light rounded">
-                                <h5 class="mb-3">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h5>
-                                <ul class="list-unstyled"></ul>
-                            </div>
-                        `);
-                        const taskList = dateHeader.find('ul');
-                        $.each(dateTasks, (index, task) => {
-                            let combinedHistory = [];
-                            let historyHeader = '';
-                            if (task.isRecurring) {
-                                const eventId = task.id.split('_')[0];
-                                const event = recurringEvents[eventId];
-                                if (event?.history) {
-                                    combinedHistory = [...event.history];
-                                }
-                                const startDateStr = new Date(event.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                                const endDateStr = event.endDate
-                                    ? new Date(event.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                    : 'No end date';
-                                historyHeader = `Recurring task from ${startDateStr} to ${endDateStr}`;
-                            } else {
-                                combinedHistory = [...(task.history || [])];
-                                historyHeader = 'Task history';
-                            }
-
-                            if (task.followUpFrom) {
-                                let currentTask = task;
-                                while (currentTask.followUpFrom) {
-                                    const originalTask = findTask(currentTask.followUpFrom) || { task: recurringEvents[currentTask.followUpFrom.split('_')[0]] };
-                                    if (originalTask?.task?.history) {
-                                        const filteredHistory = originalTask.task.history.filter(entry =>
-                                            !(entry.action === 'Follow-up created' && entry.changes.followUpId?.new === currentTask.id)
-                                        );
-                                        combinedHistory = [...filteredHistory, ...combinedHistory];
-                                    }
-                                    currentTask = originalTask.task || currentTask;
-                                }
-                            } else if (task.followUps?.length) {
-                                task.followUps.forEach(followUp => {
-                                    const followUpTask = findTask(followUp.id);
-                                    if (followUpTask?.task?.history) {
-                                        combinedHistory = [...combinedHistory, ...followUpTask.task.history];
-                                    }
-                                });
-                            }
-
-                            const uniqueHistory = [];
-                            const seen = new Set();
-                            combinedHistory.forEach(entry => {
-                                const normalizedDate = new Date(entry.date);
-                                normalizedDate.setMilliseconds(0);
-                                const normalizedChanges = JSON.stringify(
-                                    Object.fromEntries(
-                                        Object.entries(entry.changes || {})
-                                            .sort()
-                                            .map(([key, value]) => [
-                                                key,
-                                                typeof value === 'object' && value !== null
-                                                    ? Object.fromEntries(Object.entries(value).sort())
-                                                    : value
-                                            ])
-                                    )
-                                );
-                                const key = `${normalizedDate.toISOString()}_${entry.action}_${normalizedChanges}`;
-                                if (!seen.has(key)) {
-                                    seen.add(key);
-                                    uniqueHistory.push({ ...entry, date: normalizedDate.toISOString() });
-                                }
-                            });
-
-                            uniqueHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                            taskList.append(`
-                                <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-task-date="${date}" data-is-recurring="${task.isRecurring || false}">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span>
-                                            <strong>${task.title}</strong>
-                                            <span class="badge ms-2 ${task.completed ? 'bg-success' : 'bg-secondary'}">${task.completed ? 'Completed' : 'Pending'}</span>
-                                        </div>
-                                        <small class="text-muted">${task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day'}</small>
-                                    </div>
-                                    ${task.description ? `<p class="mt-2 mb-0 text-muted small">${task.description}</p>` : ''}
-                                    <div class="task-history mt-3 ${uniqueHistory.length ? '' : 'd-none'}">
-                                        <h6 class="small history-card-header"><i class="fas fa-history me-1"></i>${historyHeader}</h6>
-                                        <div class="table-responsive">
-                                            <table class="task-history-table table table-bordered">
-                                                <thead><tr><th>Date</th><th>Action</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                                                <tbody>${
-                                                    uniqueHistory.map(entry => {
-                                                        const changes = { ...entry.changes };
-                                                        delete changes.followUpId;
-                                                        return Object.entries(changes).map(([field, change], index) => `
-                                                            <tr>
-                                                                ${index === 0 ? `
-                                                                    <td rowspan="${Object.keys(changes).length}">${new Date(entry.date).toLocaleString()}</td>
-                                                                    <td rowspan="${Object.keys(changes).length}">${entry.action}</td>
-                                                                ` : ''}
-                                                                <td>${field}</td>
-                                                                <td><span class="text-danger text-decoration-line-through">${change.old ?? 'None'}</span></td>
-                                                                <td><span class="text-success">${change.new ?? 'None'}</span></td>
-                                                            </tr>
-                                                        `).join('');
-                                                    }).join('')
-                                                }</tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </li>
-                            `);
-                        });
-                        listing.append(dateHeader);
                     });
 
-                    if (!tasksToRender.length) {
-                        listing.html('<div class="alert alert-info">No tasks match your search</div>');
+                    // Filter regular tasks by search query
+                    regularTasks = regularTasks.filter(({ task }) => 
+                        task.title.toLowerCase().includes(searchQuery) ||
+                        (task.personName || '').toLowerCase().includes(searchQuery) ||
+                        (task.description || '').toLowerCase().includes(searchQuery)
+                    );
+
+                    // Sort regular tasks
+                    regularTasks.sort((a, b) => {
+                        if (sortOption === 'date-desc') return new Date(b.date) - new Date(a.date);
+                        if (sortOption === 'date-asc') return new Date(a.date) - new Date(b.date);
+                        if (sortOption === 'title-asc') return a.task.title.localeCompare(b.task.title);
+                        if (sortOption === 'title-desc') return b.task.title.localeCompare(a.task.title);
+                        return 0;
+                    });
+
+                    // Group regular tasks by date for rendering
+                    const tasksByDate = {};
+                    regularTasks.forEach(({ date, task }) => {
+                        tasksByDate[date] = tasksByDate[date] || [];
+                        tasksByDate[date].push(task);
+                    });
+
+                    // Render regular tasks
+                    Object.keys(tasksByDate).sort((a, b) => sortOption === 'date-desc' ? new Date(b) - new Date(a) : new Date(a) - new Date(b)).forEach(date => {
+                        const dateTasks = tasksByDate[date];
+                        contentHtml += `
+                            <div class="mb-4">
+                                <h4 class="mb-3">${formatDateDMY(date)}</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered task-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Time</th>
+                                                <th>Type</th>
+                                                <th>Person Name</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+
+                        dateTasks.forEach(task => {
+                            const time = task.time && task.time.start && task.time.end 
+                                ? `${task.time.start} - ${task.time.end}` 
+                                : task.time && (task.time.start || task.time.end) 
+                                ? task.time.start || task.time.end 
+                                : 'All day';
+                            const type = task.type ? task.type.charAt(0).toUpperCase() + task.type.slice(1) : 'N/A';
+                            const personName = task.personName || 'N/A';
+                            const notes = task.description || 'No notes';
+
+                            contentHtml += `
+                                <tr class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-date="${date}">
+                                    <td>${formatDateDMY(date)}</td>
+                                    <td>${time}</td>
+                                    <td>${type}</td>
+                                    <td>${personName}</td>
+                                    <td>${notes}</td>
+                                </tr>
+                            `;
+                        });
+
+                        contentHtml += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // Prepare recurring events
+                    let recurringEventsList = Object.entries(recurringEvents).map(([eventId, event]) => ({ eventId, event }));
+
+                    // Filter recurring events by search query
+                    recurringEventsList = recurringEventsList.filter(({ event }) => 
+                        event.title.toLowerCase().includes(searchQuery) ||
+                        (event.personName || '').toLowerCase().includes(searchQuery) ||
+                        (event.description || '').toLowerCase().includes(searchQuery)
+                    );
+
+                    // Sort recurring events
+                    recurringEventsList.sort((a, b) => {
+                        if (sortOption === 'date-desc') return new Date(b.event.startDate) - new Date(a.event.startDate);
+                        if (sortOption === 'date-asc') return new Date(a.event.startDate) - new Date(b.event.startDate);
+                        if (sortOption === 'title-asc') return a.event.title.localeCompare(b.event.title);
+                        if (sortOption === 'title-desc') return b.event.title.localeCompare(a.event.title);
+                        return 0;
+                    });
+
+                    // Render recurring events
+                    recurringEventsList.forEach(({ eventId, event }) => {
+                        if (processedRecurringIds.has(eventId)) return;
+                        processedRecurringIds.add(eventId);
+
+                        const startDate = new Date(event.startDate);
+                        const endDate = event.endDate ? new Date(event.endDate) : null;
+                        const dateRange = endDate 
+                            ? `${formatDateDMY(startDate)} - ${formatDateDMY(endDate)}`
+                            : `From ${formatDateDMY(startDate)}`;
+
+                        contentHtml += `
+                            <div class="mb-4">
+                                <h4 class="mb-3">Recurring: ${event.title || 'Untitled'} (${dateRange})</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered task-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Time</th>
+                                                <th>Type</th>
+                                                <th>Person Name</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+
+                        // Main recurring event entry
+                        const time = event.time && event.time.start && event.time.end 
+                            ? `${event.time.start} - ${event.time.end}` 
+                            : event.time && (event.time.start || event.time.end) 
+                            ? event.time.start || event.time.end 
+                            : 'All day';
+                        const type = event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Recurring';
+                        const personName = event.personName || 'N/A';
+                        const notes = event.description || 'No notes';
+
+                        contentHtml += `
+                            <tr class="task-item" data-event-id="${eventId}">
+                                <td>${dateRange}</td>
+                                <td>${time}</td>
+                                <td>${type}</td>
+                                <td>${personName}</td>
+                                <td>${notes}</td>
+                            </tr>
+                        `;
+
+                        // History entries (follow-ups and updates)
+                        const historyItems = (event.history || [])
+                            .map(entry => {
+                                const changes = entry.changes || {};
+                                return {
+                                    date: entry.date,
+                                    time: changes.time ? changes.time.new || time : time,
+                                    type: changes.type ? changes.type.new || type : 'Follow-up',
+                                    personName: changes.personName ? changes.personName.new || personName : personName,
+                                    notes: changes.description ? changes.description.new || notes : entry.action === 'Follow-up update' ? changes.description?.new || 'Follow-up notes' : notes
+                                };
+                            })
+                            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort in descending order
+
+                        historyItems.forEach(item => {
+                            contentHtml += `
+                                <tr class="task-item" data-event-id="${eventId}">
+                                    <td>${formatDateDMY(item.date)}</td>
+                                    <td>${item.time}</td>
+                                    <td>${item.type}</td>
+                                    <td>${item.personName}</td>
+                                    <td>${item.notes}</td>
+                                </tr>
+                            `;
+                        });
+
+                        contentHtml += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    if (contentHtml === '') {
+                        contentHtml = '<div class="alert alert-info">No tasks or recurring events match your search.</div>';
                     }
+
+                    $('#tasks-content').html(contentHtml);
+
+                    // Add click handlers for regular tasks
+                    $('#tasks-content .task-item[data-task-id]').click(function() {
+                        const taskId = $(this).data('task-id');
+                        const date = $(this).data('date');
+                        const taskData = findTask(taskId);
+                        if (taskData) {
+                            selectedTask = taskData.task;
+                            selectedDate = new Date(date);
+                            showTaskDetails(taskData.task, date);
+                            $('#task-details').removeClass('d-none');
+                            $('#tasks-date').text(formatDateDMY(selectedDate));
+                            showPage('calendar-page');
+                        }
+                    });
+
+                    // Add click handlers for recurring events
+                    $('#tasks-content .task-item[data-event-id]').click(function() {
+                        const eventId = $(this).data('event-id');
+                        const event = recurringEvents[eventId];
+                        if (event) {
+                            selectedTask = { ...event, id: eventId, isRecurring: true };
+                            selectedDate = new Date(event.startDate);
+                            showTaskDetails(selectedTask, event.startDate);
+                            $('#task-details').removeClass('d-none');
+                            $('#tasks-date').text(`Recurring Event`);
+                            showPage('calendar-page');
+                        }
+                    });
                 };
 
-                renderTasks(combinedTasks);
+                // Initial render
+                renderTasksContent();
 
-                $('#task-search').on('input', function() {
-                    const searchQuery = $(this).val().toLowerCase();
-                    const filteredTasks = combinedTasks.filter(({ task }) => 
-                        task.title.toLowerCase().includes(searchQuery)
-                    );
-                    renderTasks(filteredTasks);
-                });
-
-                $('#clear-search').click(() => {
-                    $('#task-search').val('');
-                    renderTasks(combinedTasks);
-                });
-
-                $('#task-sort-by, #toggle-sort-order').on('change click', function() {
-                    const sortBy = $('#task-sort-by').val();
-                    const sortOrder = $('#toggle-sort-order').data('order') || 'asc';
-                    if (this.id === 'toggle-sort-order') {
-                        const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-                        $('#toggle-sort-order').data('order', newOrder)
-                            .html(`<i class="fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'}"></i> ${newOrder === 'asc' ? 'Asc' : 'Desc'}`);
-                    }
-
-                    let sortedTasks = [...combinedTasks];
-                    sortedTasks.sort((a, b) => {
-                        let comparison = 0;
-                        if (sortBy === 'date') {
-                            comparison = new Date(a.date) - new Date(b.date);
-                        } else if (sortBy === 'title') {
-                            comparison = a.task.title.localeCompare(b.task.title);
-                        } else if (sortBy === 'status') {
-                            comparison = (a.task.completed ? 1 : 0) - (b.task.completed ? 1 : 0);
-                        }
-                        return sortOrder === 'asc' ? comparison : -comparison;
-                    });
-
-                    renderTasks(sortedTasks);
-                });
+                // Event listeners for search and sort
+                $('#task-search').on('input', renderTasksContent);
+                $('#task-sort').on('change', renderTasksContent);
             };
             const renderRecurringEvents = () => {
                 const container = $('#recurring-events-container').empty();
@@ -1388,11 +1503,11 @@
             });
 
             $('#add-task-btn, #add-task-global-btn').click(() => {
-
                 $('#taskDate').val(formatDate(selectedDate));
                 taskModal.show();
             });
 
+            
             $('#saveTaskBtn').click(async () => {
                 const taskId = $('#taskId').val();
                 const taskDate = $('#taskDate').val();
@@ -1690,15 +1805,14 @@
                 $('#followStartTime').val(originalTask.time?.start || '');
                 $('#followEndTime').val(originalTask.time?.end || '');
                 $('#followType').val(originalTask.type || 'call');
-                $('#followDescription').val(''); // Leave description empty
+                $('#followDescription').val('');
 
-                // Adjust modal for recurring events
                 if (isRecurring) {
                     $('#followUpModal .modal-title').text('Update Recurring Event');
-                    $('#followUpDate').closest('.mb-3').addClass('d-none'); // Hide date field
+                    $('#followUpDate').closest('.mb-3').addClass('d-none');
                 } else {
                     $('#followUpModal .modal-title').text('Add Follow-up Task');
-                    $('#followUpDate').closest('.mb-3').removeClass('d-none'); // Show date field
+                    $('#followUpDate').closest('.mb-3').removeClass('d-none');
                 }
 
                 followUpModal.show();
@@ -1710,7 +1824,6 @@
                 const isRecurring = $('#editOptionsModal').data('is-recurring');
 
                 if (isRecurring) {
-                    // Handle recurring event update
                     const eventId = taskId.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (!event) return alert('Recurring event not found');
@@ -1731,7 +1844,6 @@
 
                     if (!updatedData.title || !updatedData.personName) return alert('Please fill all required fields');
 
-                    // Calculate changes for history
                     const changes = {
                         ...(event.personName !== updatedData.personName && { personName: { old: event.personName, new: updatedData.personName } }),
                         ...(event.title !== updatedData.title && { title: { old: event.title, new: updatedData.title } }),
@@ -1755,7 +1867,6 @@
                     renderCalendar();
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
-                    // Handle regular task follow-up
                     const taskDate = $('#followUpDate').val();
                     const followUpData = {
                         id: Date.now(),
@@ -1881,7 +1992,6 @@
                     updateProfileDisplay();
                 }
 
-                // Hide sidebar on mobile after navigation
                 if ($(window).width() < 992) {
                     $('#sidebar').removeClass('active');
                     $('#sidebar-overlay').addClass('d-none');
@@ -1897,7 +2007,7 @@
             // Initial setup
             renderCalendar();
             showPage('calendar-page');
-            // Ensure history consistency on page load
+
             const ensureHistoryConsistency = () => {
                 Object.keys(tasks).forEach(date => {
                     tasks[date].forEach(task => {
@@ -1919,7 +2029,6 @@
 
             ensureHistoryConsistency();
 
-            // Handle window resize for responsive calendar
             $(window).resize(() => {
                 renderCalendar();
                 if ($(window).width() >= 992) {

@@ -850,15 +850,21 @@
             const loadRecurringEvents = () => {
                 if (!currentUser) return;
                 onSnapshot(collection(db, 'users', currentUser.uid, 'recurringEvents'), snapshot => {
+                    console.log('Recurring events snapshot received:', snapshot.size, 'changes');
                     recurringEvents = {};
-                    snapshot.forEach(doc => recurringEvents[doc.id] = doc.data());
+                    snapshot.forEach(doc => {
+                        recurringEvents[doc.id] = doc.data();
+                    });
                     renderCalendar();
                     if ($('#recurring-page').hasClass('active')) renderRecurringEvents();
                 });
             };
-
             const saveRecurringEvent = async (eventId, eventData) => {
                 if (!currentUser) return;
+                if (eventData.pattern === 'weekly' && (!eventData.days || !Array.isArray(eventData.days))) {
+                    console.error('Invalid days array for weekly recurring event');
+                    return;
+                }
                 const eventRef = doc(db, 'users', currentUser.uid, 'recurringEvents', eventId);
                 try {
                     await setDoc(eventRef, eventData, { merge: true });
@@ -884,6 +890,7 @@
                 const month = date.getMonth();
                 const firstDayOfMonth = new Date(year, month, 1);
                 const lastDayOfMonth = new Date(year, month + 1, 0);
+                const seenInstanceIds = new Set(); // Track unique instance IDs
 
                 Object.entries(recurringEvents).forEach(([id, event]) => {
                     const startDate = new Date(event.startDate);
@@ -904,11 +911,15 @@
                         const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
                         for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
                             if (isWithinRange(d)) {
-                                instances.push({
-                                    eventId: id,
-                                    date: new Date(d),
-                                    task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true }
-                                });
+                                const instanceId = `${id}_${formatDate(d)}`;
+                                if (!seenInstanceIds.has(instanceId)) {
+                                    instances.push({
+                                        eventId: id,
+                                        date: new Date(d),
+                                        task: { ...event, id: instanceId, isRecurring: true }
+                                    });
+                                    seenInstanceIds.add(instanceId);
+                                }
                             }
                         }
                     } else if (pattern === 'weekly') {
@@ -916,22 +927,30 @@
                         const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
                         for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
                             if (days.includes(d.getDay()) && isWithinRange(d)) {
-                                instances.push({
-                                    eventId: id,
-                                    date: new Date(d),
-                                    task: { ...event, id: `${id}_${formatDate(d)}`, isRecurring: true }
-                                });
+                                const instanceId = `${id}_${formatDate(d)}`;
+                                if (!seenInstanceIds.has(instanceId)) {
+                                    instances.push({
+                                        eventId: id,
+                                        date: new Date(d),
+                                        task: { ...event, id: instanceId, isRecurring: true }
+                                    });
+                                    seenInstanceIds.add(instanceId);
+                                }
                             }
                         }
                     } else if (pattern === 'monthly') {
                         const day = event.day;
                         const targetDate = new Date(year, month, day);
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
-                            instances.push({
-                                eventId: id,
-                                date: new Date(targetDate),
-                                task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true }
-                            });
+                            const instanceId = `${id}_${formatDate(targetDate)}`;
+                            if (!seenInstanceIds.has(instanceId)) {
+                                instances.push({
+                                    eventId: id,
+                                    date: new Date(targetDate),
+                                    task: { ...event, id: instanceId, isRecurring: true }
+                                });
+                                seenInstanceIds.add(instanceId);
+                            }
                         }
                     } else if (pattern === 'monthly-day') {
                         const week = event.week;
@@ -947,11 +966,15 @@
                             targetDate.setDate(targetDate.getDate() + ((day - targetDate.getDay() + 7) % 7));
                         }
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
-                            instances.push({
-                                eventId: id,
-                                date: new Date(targetDate),
-                                task: { ...event, id: `${id}_${formatDate(targetDate)}`, isRecurring: true }
-                            });
+                            const instanceId = `${id}_${formatDate(targetDate)}`;
+                            if (!seenInstanceIds.has(instanceId)) {
+                                instances.push({
+                                    eventId: id,
+                                    date: new Date(targetDate),
+                                    task: { ...event, id: instanceId, isRecurring: true }
+                                });
+                                seenInstanceIds.add(instanceId);
+                            }
                         }
                     }
                 });
@@ -978,7 +1001,10 @@
                 getRecurringInstances(currentDate).forEach(({ date, task }) => {
                     const dateStr = formatDate(date);
                     monthTasks[dateStr] = monthTasks[dateStr] || [];
-                    monthTasks[dateStr].push(task);
+                    // Only add if task ID is unique
+                    if (!monthTasks[dateStr].some(t => t.id === task.id)) {
+                        monthTasks[dateStr].push(task);
+                    }
                 });
 
                 for (let i = 0; i < 6 && date <= daysInMonth; i++) {
@@ -1006,14 +1032,26 @@
 
             const updateTasksPanel = () => {
                 const dateStr = formatDate(selectedDate);
-                const dateTasks = (tasks[dateStr] || []).concat(
-                    getRecurringInstances(selectedDate)
-                        .filter(i => isSameDay(i.date, selectedDate))
-                        .map(i => i.task)
-                );
+                const recurringInstances = getRecurringInstances(selectedDate)
+                    .filter(i => isSameDay(i.date, selectedDate))
+                    .map(i => i.task);
+                
+                // Combine regular and recurring tasks, removing duplicates by ID
+                const allTasks = (tasks[dateStr] || []).concat(recurringInstances);
+                const uniqueTasks = [];
+                const seenTaskIds = new Set();
+                
+                allTasks.forEach(task => {
+                    if (!seenTaskIds.has(task.id)) {
+                        uniqueTasks.push(task);
+                        seenTaskIds.add(task.id);
+                    }
+                });
+
                 $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
-                $('#no-tasks-message').toggleClass('d-none', dateTasks.length > 0);
-                $('#tasks-list').html(dateTasks.map(task => `
+                $('#no-tasks-message').toggleClass('d-none', uniqueTasks.length > 0);
+                $('#tasks-list').empty(); // Clear previous tasks
+                $('#tasks-list').html(uniqueTasks.map(task => `
                     <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-is-recurring="${task.isRecurring || false}">
                         <div class="d-flex justify-content-between align-items-start">
                             <div><span class="${task.isRecurring ? 'type-recurring' : `type-${task.type || 'call'}`} task-priority"></span><strong>${task.title}</strong></div>
@@ -1024,7 +1062,6 @@
                 `).join(''));
                 $('#task-details').toggleClass('d-none', !selectedTask);
             };
-
             const showTaskDetails = (task, taskDate) => {
                 selectedTask = task;
                 selectedDate = new Date(taskDate);

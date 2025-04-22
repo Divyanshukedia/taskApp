@@ -1839,6 +1839,20 @@
                 });
             });
 
+            // Update button text and style when edit options modal is shown
+            $('#editOptionsModal').on('show.bs.modal', function () {
+                if (selectedTask) {
+                    const markCompletedBtn = $('#markCompletedBtn');
+                    if (selectedTask.completed) {
+                        markCompletedBtn.text('Mark as Incomplete');
+                        markCompletedBtn.removeClass('btn-success').addClass('btn-secondary');
+                    } else {
+                        markCompletedBtn.text('Mark as Completed');
+                        markCompletedBtn.removeClass('btn-warning').addClass('btn-success');
+                    }
+                }
+            });
+
             $('#editTaskDetailsBtn').click(() => {
                 const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
                 if (isRecurring) {
@@ -1902,15 +1916,22 @@
                 renderCalendar();
             });
 
+            // Updated click handler to toggle completion status
             $('#markCompletedBtn').click(async () => {
                 const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
                 if (isRecurring) {
                     const eventId = taskId.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (event) {
-                        event.completed = true;
+                        const newCompletedStatus = !event.completed;
+                        const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
+                        event.completed = newCompletedStatus;
                         event.history = event.history || [];
-                        event.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
+                        event.history.unshift({
+                            date: new Date().toISOString(),
+                            action: action,
+                            changes: { completed: { old: !newCompletedStatus, new: newCompletedStatus } }
+                        });
                         await saveRecurringEvent(eventId, event);
                         renderCalendar();
                         showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
@@ -1922,8 +1943,14 @@
                     }
                     const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
                     if (task) {
-                        task.completed = true;
-                        task.history.unshift({ date: new Date().toISOString(), action: 'Marked as completed', changes: { completed: { old: false, new: true } } });
+                        const newCompletedStatus = !task.completed;
+                        const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
+                        task.completed = newCompletedStatus;
+                        task.history.unshift({
+                            date: new Date().toISOString(),
+                            action: action,
+                            changes: { completed: { old: !newCompletedStatus, new: newCompletedStatus } }
+                        });
                         await saveTasks(taskDate, tasks[taskDate]);
                         renderCalendar();
                         showTaskDetails(task, taskDate);

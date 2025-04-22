@@ -1545,11 +1545,109 @@
                 $('#taskDate').val(formatDate(selectedDate));
                 taskModal.show();
             });
+            const hasConflict = (date, startTime, endTime, excludeTaskId = null, excludeEventId = null) => {
+                const dateStr = formatDate(new Date(date));
+                // Combine regular tasks and recurring instances for the date
+                const dateTasks = (tasks[dateStr] || []).concat(
+                    getRecurringInstances(new Date(dateStr))
+                        .filter(i => isSameDay(i.date, new Date(dateStr)))
+                        .map(i => i.task)
+                );
+                // Remove duplicates based on task ID
+                const uniqueTasks = dateTasks.filter((task, index, self) => 
+                    index === self.findIndex(t => t.id === task.id)
+                );
+                // Filter out the task being edited or instances of the recurring event being edited
+                let otherTasks = uniqueTasks.filter(t => {
+                    if (excludeTaskId && t.id === excludeTaskId) return false;
+                    if (excludeEventId && t.id.startsWith(excludeEventId + '_')) return false;
+                    return true;
+                });
 
-            
+                // Determine if the proposed task is all-day (no start or end time)
+                const isProposedAllDay = !startTime || !endTime;
+
+                if (isProposedAllDay) {
+                    // All-day tasks conflict if any other tasks exist
+                    return otherTasks.length > 0;
+                } else {
+                    // Check for all-day tasks among existing tasks
+                    if (otherTasks.some(t => !t.time || !t.time.start || !t.time.end)) {
+                        return true;
+                    }
+                    // Check for overlapping timed tasks
+                    for (const task of otherTasks) {
+                        if (task.time && task.time.start && task.time.end) {
+                            if (startTime < task.time.end && task.time.start < endTime) {
+                                return true; // Overlap detected
+                            }
+                        }
+                    }
+                    return false; // No conflicts
+                }
+            };
+            const getRecurringDates = (eventData, startCheckDate, endCheckDate) => {
+                const dates = [];
+                const start = new Date(Math.max(new Date(eventData.startDate), startCheckDate));
+                const end = eventData.endDate ? new Date(Math.min(new Date(eventData.endDate), endCheckDate)) : endCheckDate;
+                if (start > end) return dates;
+
+                if (eventData.pattern === 'daily') {
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        dates.push(new Date(d));
+                    }
+                } else if (eventData.pattern === 'weekly') {
+                    const days = eventData.days || [];
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        if (days.includes(d.getDay())) {
+                            dates.push(new Date(d));
+                        }
+                    }
+                } else if (eventData.pattern === 'monthly') {
+                    const day = eventData.day;
+                    let current = new Date(start);
+                    while (current <= end) {
+                        const targetDate = new Date(current.getFullYear(), current.getMonth(), day);
+                        if (targetDate >= start && targetDate <= end && targetDate.getDate() === day) {
+                            dates.push(targetDate);
+                        }
+                        current.setMonth(current.getMonth() + 1);
+                    }
+                } else if (eventData.pattern === 'monthly-day') {
+                    const week = eventData.week;
+                    const day = eventData.day;
+                    let current = new Date(start);
+                    while (current <= end) {
+                        let targetDate;
+                        if (week === 'last') {
+                            const lastDay = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+                            targetDate = new Date(lastDay);
+                            targetDate.setDate(lastDay.getDate() - ((lastDay.getDay() - day + 7) % 7));
+                        } else {
+                            const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
+                            targetDate = new Date(current.getFullYear(), current.getMonth(), 1 + (week - 1) * 7);
+                            targetDate.setDate(targetDate.getDate() + ((day - targetDate.getDay() + 7) % 7));
+                        }
+                        if (targetDate.getMonth() === current.getMonth() && targetDate >= start && targetDate <= end) {
+                            dates.push(targetDate);
+                        }
+                        current.setMonth(current.getMonth() + 1);
+                    }
+                }
+                return dates;
+            };
+
             $('#saveTaskBtn').click(async () => {
                 const taskId = $('#taskId').val();
                 const taskDate = $('#taskDate').val();
+                const startTime = $('#taskStartTime').val();
+                const endTime = $('#taskEndTime').val();
+                const excludeTaskId = taskId ? parseInt(taskId) : null
+                // Check for conflicts
+                if (hasConflict(taskDate, startTime, endTime, excludeTaskId)) {
+                    alert('This task conflicts with an existing task on this date.');
+                    return;
+                }
                 const taskData = {
                     id: taskId ? parseInt(taskId) : Date.now(),
                     personName: $('#personName').val(),
@@ -1652,7 +1750,16 @@
                     eventData.week = $('#monthlyWeek').val();
                     eventData.day = parseInt($('#monthlyDay').val());
                 }
-
+                const checkEndDate = new Date();
+                checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
+                const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
+                for (const date of datesToCheck) {
+                    const dateStr = formatDate(date);
+                    if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
+                        alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
+                        return;
+                    }
+                }
                 const oldEvent = recurringEvents[eventId];
                 const changes = oldEvent ? {
                     ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
@@ -1861,8 +1968,14 @@
             $('#saveFollowUpBtn').click(async () => {
                 const taskId = $('#originalTaskId').val();
                 const isRecurring = $('#editOptionsModal').data('is-recurring');
-
+                const taskDate = $('#followUpDate').val();
+                const startTime = $('#followStartTime').val();
+                const endTime = $('#followEndTime').val();
                 if (isRecurring) {
+                    if (hasConflict(taskDate, startTime, endTime)) {
+                        alert('This follow-up task conflicts with an existing task on this date.');
+                        return;
+                    }
                     const eventId = taskId.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (!event) return alert('Recurring event not found');
@@ -1907,6 +2020,10 @@
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
                     const taskDate = $('#followUpDate').val();
+                    if (hasConflict(taskDate, startTime, endTime)) {
+                        alert('This follow-up task conflicts with an existing task on this date.');
+                        return;
+                    }
                     const followUpData = {
                         id: Date.now(),
                         personName: $('#followPersonName').val(),

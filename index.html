@@ -1119,7 +1119,7 @@
                 const tbody = $('#task-history-table-body').empty();
                 historyItems.forEach(item => {
                     const entryDate = new Date(item.date);
-                    const timeStr = item.time ? item.time : 'All day';
+                    const timeStr = item.time || 'All day';
                     const row = `
                         <tr>
                             <td>${entryDate.toLocaleDateString()}</td>
@@ -1136,7 +1136,8 @@
                 }
             };
 
-            // Updated click handler for view history button
+
+            // Updated view-history-btn click handler
             $('#view-history-btn').click(() => {
                 if (!selectedTask) return;
                 let historyItems = [];
@@ -1152,22 +1153,54 @@
                             : 'No end date';
                         note = `Recurring task from ${startDateStr} to ${endDateStr}`;
 
-                        // Extract history entries from event.history
-                        historyItems = (event.history || [])
-                            .map(entry => {
-                                const changes = entry.changes || {};
-                                return {
-                                    date: entry.date,
-                                    time: changes.time ? changes.time.new || 'All day' : event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
-                                    type: changes.type ? changes.type.new || event.type || 'N/A' : event.type || 'N/A',
-                                    personName: changes.personName ? changes.personName.new || event.personName || 'N/A' : event.personName || 'N/A',
-                                    notes: changes.description ? changes.description.new || event.description || 'No notes' : event.description || 'No notes'
-                                };
-                            })
-                            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort in descending order
+                        // Combine history and follow-ups
+                        historyItems = [];
+
+                        // Add main event as the first entry
+                        historyItems.push({
+                            date: event.startDate,
+                            time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
+                            type: event.type || 'Recurring',
+                            personName: event.personName || 'N/A',
+                            notes: event.description || 'No notes'
+                        });
+
+                        // Add follow-ups from followUps array using instance date
+                        if (event.followUps && event.followUps.length > 0) {
+                            event.followUps.forEach(followUp => {
+                                historyItems.push({
+                                    date: followUp.date, // Use instance date (e.g., 1st May)
+                                    time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
+                                    type: followUp.type || 'Follow-up',
+                                    personName: followUp.personName || 'N/A',
+                                    notes: followUp.description || 'No notes'
+                                });
+                            });
+                        }
+
+                        // Add other history entries (e.g., updates)
+                        if (event.history && event.history.length > 0) {
+                            event.history.forEach(entry => {
+                                if (entry.action !== 'Follow-up created') {
+                                    const changes = entry.changes || {};
+                                    // Use instanceDate if available, else fall back to event startDate
+                                    const instanceDate = entry.instanceDate || event.startDate;
+                                    historyItems.push({
+                                        date: instanceDate,
+                                        time: changes.time ? changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day') : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
+                                        type: changes.type ? changes.type.new || event.type || 'N/A' : event.type || 'N/A',
+                                        personName: changes.personName ? changes.personName.new || event.personName || 'N/A' : event.personName || 'N/A',
+                                        notes: changes.description ? changes.description.new || event.description || 'No notes' : event.description || 'No notes'
+                                    });
+                                }
+                            });
+                        }
+
+                        // Sort by instance date in descending order
+                        historyItems.sort((a, b) => new Date(b.date) - new Date(a.date));
                     }
                 } else {
-                    // Handle normal task with related tasks and follow-ups
+                    // Handle normal task with related tasks and follow-ups (unchanged)
                     const relatedTasks = getRelatedTasks(selectedTask.id);
                     note = 'Related Tasks and Follow-ups';
                     historyItems = relatedTasks.map(({ task, date }) => ({
@@ -1182,11 +1215,13 @@
                 taskHistoryModal.show();
             });
 
+
             const formatDateDMY = (date) => {
                 const d = new Date(date);
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             };
 
+    // Updated renderAllTasks function
             const renderAllTasks = () => {
                 let html = `
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1214,21 +1249,25 @@
                     const searchQuery = $('#task-search').val().toLowerCase();
                     const sortOption = $('#task-sort').val();
                     const processedRecurringIds = new Set();
+                    const processedTaskIds = new Set();
 
-                    // Prepare regular tasks
+                    // Prepare regular tasks and their follow-ups
                     let regularTasks = [];
                     Object.keys(tasks).forEach(date => {
-                        (tasks[date] || []).filter(task => !task.isRecurring && !task.eventId).forEach(task => {
+                        (tasks[date] || []).filter(task => !task.isRecurring && !task.eventId && !task.followUpFrom).forEach(task => {
                             regularTasks.push({ date, task });
                         });
                     });
 
-                    // Filter regular tasks by search query
-                    regularTasks = regularTasks.filter(({ task }) => 
-                        task.title.toLowerCase().includes(searchQuery) ||
-                        (task.personName || '').toLowerCase().includes(searchQuery) ||
-                        (task.description || '').toLowerCase().includes(searchQuery)
-                    );
+                    // Filter regular tasks by search query, including follow-ups
+                    regularTasks = regularTasks.filter(({ task, date }) => {
+                        const relatedTasks = getRelatedTasks(task.id);
+                        return relatedTasks.some(({ task: t, date: d }) => 
+                            t.title.toLowerCase().includes(searchQuery) ||
+                            (t.personName || '').toLowerCase().includes(searchQuery) ||
+                            (t.description || '').toLowerCase().includes(searchQuery)
+                        );
+                    });
 
                     // Sort regular tasks
                     regularTasks.sort((a, b) => {
@@ -1239,19 +1278,15 @@
                         return 0;
                     });
 
-                    // Group regular tasks by date for rendering
-                    const tasksByDate = {};
+                    // Render regular tasks with follow-ups as history
                     regularTasks.forEach(({ date, task }) => {
-                        tasksByDate[date] = tasksByDate[date] || [];
-                        tasksByDate[date].push(task);
-                    });
+                        if (processedTaskIds.has(task.id)) return;
+                        processedTaskIds.add(task.id);
 
-                    // Render regular tasks
-                    Object.keys(tasksByDate).sort((a, b) => sortOption === 'date-desc' ? new Date(b) - new Date(a) : new Date(a) - new Date(b)).forEach(date => {
-                        const dateTasks = tasksByDate[date];
+                        const relatedTasks = getRelatedTasks(task.id);
                         contentHtml += `
                             <div class="mb-4">
-                                <h4 class="mb-3">${formatDateDMY(date)}</h4>
+                                <h4 class="mb-3">Task: ${task.title} (Created on ${formatDateDMY(date)})</h4>
                                 <div class="table-responsive">
                                     <table class="table table-bordered task-history-table">
                                         <thead>
@@ -1266,25 +1301,27 @@
                                         <tbody>
                         `;
 
-                        dateTasks.forEach(task => {
-                            const time = task.time && task.time.start && task.time.end 
-                                ? `${task.time.start} - ${task.time.end}` 
-                                : task.time && (task.time.start || task.time.end) 
-                                ? task.time.start || task.time.end 
+                        // Add main task and follow-ups
+                        relatedTasks.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(({ task: relatedTask, date: relatedDate }) => {
+                            const time = relatedTask.time && relatedTask.time.start && relatedTask.time.end 
+                                ? `${relatedTask.time.start} - ${relatedTask.time.end}` 
+                                : relatedTask.time && (relatedTask.time.start || relatedTask.time.end) 
+                                ? relatedTask.time.start || relatedTask.time.end 
                                 : 'All day';
-                            const type = task.type ? task.type.charAt(0).toUpperCase() + task.type.slice(1) : 'N/A';
-                            const personName = task.personName || 'N/A';
-                            const notes = task.description || 'No notes';
+                            const type = relatedTask.type ? relatedTask.type.charAt(0).toUpperCase() + relatedTask.type.slice(1) : relatedTask.followUpFrom ? 'Follow-up' : 'N/A';
+                            const personName = relatedTask.personName || 'N/A';
+                            const notes = relatedTask.description || 'No notes';
 
                             contentHtml += `
-                                <tr class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-date="${date}">
-                                    <td>${formatDateDMY(date)}</td>
+                                <tr class="task-item ${relatedTask.completed ? 'completed' : ''}" data-task-id="${relatedTask.id}" data-date="${relatedDate}">
+                                    <td>${formatDateDMY(relatedDate)}</td>
                                     <td>${time}</td>
                                     <td>${type}</td>
                                     <td>${personName}</td>
                                     <td>${notes}</td>
                                 </tr>
                             `;
+                            processedTaskIds.add(relatedTask.id);
                         });
 
                         contentHtml += `
@@ -1295,14 +1332,19 @@
                         `;
                     });
 
-                    // Prepare recurring events
+                    // Prepare recurring events (unchanged)
                     let recurringEventsList = Object.entries(recurringEvents).map(([eventId, event]) => ({ eventId, event }));
 
                     // Filter recurring events by search query
                     recurringEventsList = recurringEventsList.filter(({ event }) => 
                         event.title.toLowerCase().includes(searchQuery) ||
                         (event.personName || '').toLowerCase().includes(searchQuery) ||
-                        (event.description || '').toLowerCase().includes(searchQuery)
+                        (event.description || '').toLowerCase().includes(searchQuery) ||
+                        (event.followUps || []).some(followUp => 
+                            (followUp.title || '').toLowerCase().includes(searchQuery) ||
+                            (followUp.personName || '').toLowerCase().includes(searchQuery) ||
+                            (followUp.description || '').toLowerCase().includes(searchQuery)
+                        )
                     );
 
                     // Sort recurring events
@@ -1314,7 +1356,7 @@
                         return 0;
                     });
 
-                    // Render recurring events
+                    // Render recurring events (unchanged)
                     recurringEventsList.forEach(({ eventId, event }) => {
                         if (processedRecurringIds.has(eventId)) return;
                         processedRecurringIds.add(eventId);
@@ -1343,38 +1385,61 @@
                         `;
 
                         // Main recurring event entry
-                        const time = event.time && event.time.start && event.time.end 
+                        const mainTime = event.time && event.time.start && event.time.end 
                             ? `${event.time.start} - ${event.time.end}` 
                             : event.time && (event.time.start || event.time.end) 
                             ? event.time.start || event.time.end 
                             : 'All day';
-                        const type = event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Recurring';
-                        const personName = event.personName || 'N/A';
-                        const notes = event.description || 'No notes';
+                        const mainType = event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Recurring';
+                        const mainPersonName = event.personName || 'N/A';
+                        const mainNotes = event.description || 'No notes';
 
                         contentHtml += `
                             <tr class="task-item" data-event-id="${eventId}">
                                 <td>${dateRange}</td>
-                                <td>${time}</td>
-                                <td>${type}</td>
-                                <td>${personName}</td>
-                                <td>${notes}</td>
+                                <td>${mainTime}</td>
+                                <td>${mainType}</td>
+                                <td>${mainPersonName}</td>
+                                <td>${mainNotes}</td>
                             </tr>
                         `;
 
                         // History entries (follow-ups and updates)
-                        const historyItems = (event.history || [])
-                            .map(entry => {
-                                const changes = entry.changes || {};
-                                return {
-                                    date: entry.date,
-                                    time: changes.time ? changes.time.new || time : time,
-                                    type: changes.type ? changes.type.new || type : 'Follow-up',
-                                    personName: changes.personName ? changes.personName.new || personName : personName,
-                                    notes: changes.description ? changes.description.new || notes : entry.action === 'Follow-up update' ? changes.description?.new || 'Follow-up notes' : notes
-                                };
-                            })
-                            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort in descending order
+                        const historyItems = [];
+
+                        // Add follow-ups using instance date
+                        if (event.followUps && event.followUps.length > 0) {
+                            event.followUps.forEach(followUp => {
+                                historyItems.push({
+                                    date: followUp.date, // Use instance date (e.g., 1st May)
+                                    time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
+                                    type: followUp.type ? followUp.type.charAt(0).toUpperCase() + followUp.type.slice(1) : 'Follow-up',
+                                    personName: followUp.personName || 'N/A',
+                                    notes: followUp.description || 'No notes'
+                                });
+                            });
+                        }
+
+                        // Add other history entries (e.g., updates)
+                        if (event.history && event.history.length > 0) {
+                            event.history.forEach(entry => {
+                                if (entry.action !== 'Follow-up created') {
+                                    const changes = entry.changes || {};
+                                    // Use instanceDate if available, else fall back to event startDate
+                                    const instanceDate = entry.instanceDate || event.startDate;
+                                    historyItems.push({
+                                        date: instanceDate,
+                                        time: changes.time ? changes.time.new || mainTime : mainTime,
+                                        type: changes.type ? changes.type.new || mainType : mainType,
+                                        personName: changes.personName ? changes.personName.new || mainPersonName : mainPersonName,
+                                        notes: changes.description ? changes.description.new || mainNotes : mainNotes
+                                    });
+                                }
+                            });
+                        }
+
+                        // Sort history items by instance date in descending order
+                        historyItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
                         historyItems.forEach(item => {
                             contentHtml += `
@@ -1420,10 +1485,12 @@
 
                     // Add click handlers for recurring events
                     $('#tasks-content .task-item[data-event-id]').click(function() {
-                        const eventId = $(this).data('event-id');
+                        const eventId = String($(this).data('event-id')); // Ensure eventId is a string
                         const event = recurringEvents[eventId];
                         if (event) {
-                            selectedTask = { ...event, id: eventId, isRecurring: true };
+                            // Create a unique ID for the recurring event instance
+                            const instanceId = `${eventId}_${formatDate(new Date(event.startDate))}`;
+                            selectedTask = { ...event, id: instanceId, isRecurring: true };
                             selectedDate = new Date(event.startDate);
                             currentDate = new Date(event.startDate); // Update currentDate
                             renderCalendar(); // Render with correct month
@@ -1441,6 +1508,8 @@
                 $('#task-search').on('input', renderTasksContent);
                 $('#task-sort').on('change', renderTasksContent);
             };
+
+
             const renderRecurringEvents = () => {
                 const container = $('#recurring-events-container').empty();
                 if (!Object.keys(recurringEvents).length) {
@@ -1560,7 +1629,7 @@
                 // Filter out the task being edited or instances of the recurring event being edited
                 let otherTasks = uniqueTasks.filter(t => {
                     if (excludeTaskId && t.id === excludeTaskId) return false;
-                    if (excludeEventId && t.id.startsWith(excludeEventId + '_')) return false;
+                    if (excludeEventId && typeof t.id === 'string' && t.id.startsWith(excludeEventId + '_')) return false;
                     return true;
                 });
 
@@ -1718,6 +1787,7 @@
 
             $('#saveRecurringBtn').click(async () => {
                 const eventId = $('#recurringId').val() || String(Date.now());
+                const isEditing = !!$('#recurringId').val(); // Set isEditing based on whether eventId exists
                 const pattern = $('#recurrencePattern').val();
                 let eventData = {
                     personName: $('#recurringPersonName').val(),
@@ -1750,6 +1820,7 @@
                     eventData.week = $('#monthlyWeek').val();
                     eventData.day = parseInt($('#monthlyDay').val());
                 }
+
                 const checkEndDate = new Date();
                 checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
                 const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
@@ -1760,6 +1831,7 @@
                         return;
                     }
                 }
+
                 const oldEvent = recurringEvents[eventId];
                 const changes = oldEvent ? {
                     ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
@@ -1998,55 +2070,73 @@
                 const taskDate = $('#followUpDate').val();
                 const startTime = $('#followStartTime').val();
                 const endTime = $('#followEndTime').val();
+
                 if (isRecurring) {
-                    if (hasConflict(taskDate, startTime, endTime)) {
-                        alert('This follow-up task conflicts with an existing task on this date.');
-                        return;
-                    }
                     const eventId = taskId.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (!event) return alert('Recurring event not found');
 
-                    const updatedData = {
+                    // Create a follow-up entry
+                    const followUpId = Date.now();
+                    const followUpData = {
+                        id: followUpId,
                         personName: $('#followPersonName').val(),
                         title: $('#followTitle').val(),
                         time: { start: $('#followStartTime').val(), end: $('#followEndTime').val() },
                         type: $('#followType').val(),
                         description: $('#followDescription').val(),
-                        startDate: event.startDate,
-                        endDate: event.endDate || null,
-                        pattern: event.pattern,
-                        completed: event.completed,
-                        history: event.history || [],
-                        followUps: event.followUps || []
+                        date: new Date().toISOString().split('T')[0] // Use current date for history tracking
                     };
 
-                    if (!updatedData.title || !updatedData.personName) return alert('Please fill all required fields');
+                    if (!followUpData.title || !followUpData.personName) return alert('Please fill all required fields');
 
-                    const changes = {
-                        ...(event.personName !== updatedData.personName && { personName: { old: event.personName, new: updatedData.personName } }),
-                        ...(event.title !== updatedData.title && { title: { old: event.title, new: updatedData.title } }),
-                        ...(event.type !== updatedData.type && { type: { old: event.type, new: updatedData.type } }),
-                        ...((event.time.start !== updatedData.time.start || event.time.end !== updatedData.time.end) && {
-                            time: { old: `${event.time.start || ''} - ${event.time.end || ''}`, new: `${updatedData.time.start} - ${updatedData.time.end}` }
-                        }),
-                        ...(event.description !== updatedData.description && { description: { old: event.description || 'None', new: updatedData.description || 'None' } })
-                    };
-
-                    if (Object.keys(changes).length) {
-                        updatedData.history.unshift({
-                            date: new Date().toISOString(),
-                            action: 'Follow-up update',
-                            changes
-                        });
+                    // Check for conflicts on the date of the follow-up (using original event date for simplicity)
+                    const checkDate = event.startDate; // Use event's start date for conflict check
+                    if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
+                        alert('This follow-up conflicts with an existing task on the event date.');
+                        return;
                     }
 
+                    // Update event data
+                    const updatedData = { ...event };
+                    updatedData.history = updatedData.history || [];
+                    updatedData.followUps = updatedData.followUps || [];
+
+                    // Create history entry for the follow-up
+                    const changes = {
+                        followUpId: { new: followUpId },
+                        followUpTitle: { new: followUpData.title },
+                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
+                        followUpPersonName: { new: followUpData.personName },
+                        followUpType: { new: followUpData.type },
+                        followUpDescription: { new: followUpData.description || 'None' }
+                    };
+
+                    updatedData.history.unshift({
+                        date: new Date().toISOString(),
+                        action: 'Follow-up created',
+                        changes
+                    });
+
+                    // Add follow-up to the followUps array
+                    updatedData.followUps.push({
+                        id: followUpId,
+                        date: followUpData.date,
+                        title: followUpData.title,
+                        personName: followUpData.personName,
+                        time: followUpData.time,
+                        type: followUpData.type,
+                        description: followUpData.description
+                    });
+
+                    // Save to Firebase
                     await saveRecurringEvent(eventId, updatedData);
-                    recurringModal.hide();
+                    followUpModal.hide();
                     renderCalendar();
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
-                    const taskDate = $('#followUpDate').val();
+                    // Existing logic for non-recurring tasks remains unchanged
+                    if (!taskDate) return alert('Please select a follow-up date');
                     if (hasConflict(taskDate, startTime, endTime)) {
                         alert('This follow-up task conflicts with an existing task on this date.');
                         return;

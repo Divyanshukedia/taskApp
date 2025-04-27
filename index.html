@@ -888,62 +888,90 @@
                 const instances = [];
                 const year = date.getFullYear();
                 const month = date.getMonth();
-                const firstDayOfMonth = new Date(year, month, 1);
-                const lastDayOfMonth = new Date(year, month + 1, 0);
-                const seenInstanceIds = new Set(); // Track unique instance IDs
+                const firstDayOfMonth = new Date(year, month, 1, 0, 0, 0, 0); // Normalize to midnight
+                const lastDayOfMonth = new Date(year, month + 1, 0, 0, 0, 0, 0);
+                const seenInstanceIds = new Set();
 
                 Object.entries(recurringEvents).forEach(([id, event]) => {
+                    // Normalize startDate and endDate to midnight
                     const startDate = new Date(event.startDate);
+                    startDate.setHours(0, 0, 0, 0);
                     const endDate = event.endDate ? new Date(event.endDate) : null;
+                    if (endDate) endDate.setHours(0, 0, 0, 0);
                     const pattern = event.pattern;
 
                     const isWithinRange = (d) => {
-                        const dDate = new Date(d);
+                        const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+                        const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
+                        const end = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0, 0, 0, 0) : null;
+                        const first = new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth(), firstDayOfMonth.getDate(), 0, 0, 0, 0);
+                        const last = new Date(lastDayOfMonth.getFullYear(), lastDayOfMonth.getMonth(), lastDayOfMonth.getDate(), 0, 0, 0, 0);
+
                         return (
-                            (!endDate || dDate <= endDate) &&
-                            dDate >= startDate &&
-                            dDate >= firstDayOfMonth &&
-                            dDate <= lastDayOfMonth
+                            (!end || dDate <= end) &&
+                            dDate >= start &&
+                            dDate >= first &&
+                            dDate <= last
                         );
                     };
 
-                    if (pattern === 'daily') {
-                        const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
-                        for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
-                            if (isWithinRange(d)) {
-                                const instanceId = `${id}_${formatDate(d)}`;
-                                if (!seenInstanceIds.has(instanceId)) {
-                                    instances.push({
-                                        eventId: id,
-                                        date: new Date(d),
-                                        task: { ...event, id: instanceId, isRecurring: true }
-                                    });
-                                    seenInstanceIds.add(instanceId);
-                                }
-                            }
-                        }
-                    } else if (pattern === 'weekly') {
+                    if (pattern === 'weekly') {
                         const days = event.days || [];
-                        const loopStart = startDate > firstDayOfMonth ? startDate : firstDayOfMonth;
-                        for (let d = new Date(loopStart); d <= lastDayOfMonth; d.setDate(d.getDate() + 1)) {
-                            if (days.includes(d.getDay()) && isWithinRange(d)) {
-                                const instanceId = `${id}_${formatDate(d)}`;
+                        const loopStart = startDate > firstDayOfMonth ? new Date(startDate) : new Date(firstDayOfMonth);
+                        loopStart.setHours(0, 0, 0, 0);
+                        const loopEnd = endDate && endDate < lastDayOfMonth ? new Date(endDate) : new Date(lastDayOfMonth);
+                        loopEnd.setHours(0, 0, 0, 0);
+
+                        let currentDate = new Date(loopStart);
+                        while (currentDate <= loopEnd) {
+                            const dayOfWeek = currentDate.getDay();
+                            if (days.includes(dayOfWeek) && isWithinRange(currentDate)) {
+                                const dateStr = formatDate(currentDate);
+                                const instanceId = `${id}_${dateStr}`;
                                 if (!seenInstanceIds.has(instanceId)) {
+                                    console.log(`Adding instance for ${dateStr} (Day: ${dayOfWeek})`); // Debug
                                     instances.push({
                                         eventId: id,
-                                        date: new Date(d),
+                                        date: new Date(currentDate),
+                                        task: { ...event, id: instanceId, isRecurring: true }
+                                    });
+                                    seenInstanceIds.add(instanceId);
+                                } else {
+                                    console.log(`Duplicate instanceId ${instanceId} skipped`); // Debug
+                                }
+                            }
+                            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 0, 0, 0, 0);
+                        }
+                    } else if (pattern === 'daily') {
+                        const loopStart = startDate > firstDayOfMonth ? new Date(startDate) : new Date(firstDayOfMonth);
+                        loopStart.setHours(0, 0, 0, 0);
+                        const loopEnd = endDate && endDate < lastDayOfMonth ? new Date(endDate) : new Date(lastDayOfMonth);
+                        loopEnd.setHours(0, 0, 0, 0);
+
+                        let currentDate = new Date(loopStart);
+                        while (currentDate <= loopEnd) {
+                            if (isWithinRange(currentDate)) {
+                                const dateStr = formatDate(currentDate);
+                                const instanceId = `${id}_${dateStr}`;
+                                if (!seenInstanceIds.has(instanceId)) {
+                                    console.log(`Adding instance for ${dateStr}`); // Debug
+                                    instances.push({
+                                        eventId: id,
+                                        date: new Date(currentDate),
                                         task: { ...event, id: instanceId, isRecurring: true }
                                     });
                                     seenInstanceIds.add(instanceId);
                                 }
                             }
+                            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 0, 0, 0, 0);
                         }
                     } else if (pattern === 'monthly') {
                         const day = event.day;
-                        const targetDate = new Date(year, month, day);
+                        const targetDate = new Date(year, month, day, 0, 0, 0, 0);
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
                             const instanceId = `${id}_${formatDate(targetDate)}`;
                             if (!seenInstanceIds.has(instanceId)) {
+                                console.log(`Adding monthly instance for ${formatDate(targetDate)}`); // Debug
                                 instances.push({
                                     eventId: id,
                                     date: new Date(targetDate),
@@ -957,17 +985,20 @@
                         const day = event.day;
                         let targetDate;
                         if (week === 'last') {
-                            const lastDay = new Date(year, month + 1, 0);
+                            const lastDay = new Date(year, month + 1, 0, 0, 0, 0, 0);
                             targetDate = new Date(lastDay);
                             targetDate.setDate(lastDay.getDate() - ((lastDay.getDay() - day + 7) % 7));
+                            targetDate.setHours(0, 0, 0, 0);
                         } else {
-                            const firstDay = new Date(year, month, 1);
-                            targetDate = new Date(year, month, 1 + (week - 1) * 7);
+                            const firstDay = new Date(year, month, 1, 0, 0, 0, 0);
+                            targetDate = new Date(year, month, 1 + (week - 1) * 7, 0, 0, 0, 0);
                             targetDate.setDate(targetDate.getDate() + ((day - targetDate.getDay() + 7) % 7));
+                            targetDate.setHours(0, 0, 0, 0);
                         }
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
                             const instanceId = `${id}_${formatDate(targetDate)}`;
                             if (!seenInstanceIds.has(instanceId)) {
+                                console.log(`Adding monthly-day instance for ${formatDate(targetDate)}`); // Debug
                                 instances.push({
                                     eventId: id,
                                     date: new Date(targetDate),
@@ -979,9 +1010,9 @@
                     }
                 });
 
+                console.log(`Total instances for ${monthNames[month]} ${year}:`, instances.map(i => formatDate(i.date))); // Debug
                 return instances;
             };
-
             // Calendar Rendering
             const renderCalendar = () => {
                 const year = currentDate.getFullYear();

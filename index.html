@@ -924,7 +924,6 @@
             const loadRecurringEvents = () => {
                 if (!currentUser) return;
                 onSnapshot(collection(db, 'users', currentUser.uid, 'recurringEvents'), snapshot => {
-                    console.log('Recurring events snapshot received:', snapshot.size, 'changes');
                     recurringEvents = {};
                     snapshot.forEach(doc => {
                         recurringEvents[doc.id] = doc.data();
@@ -1003,7 +1002,6 @@
                                 const dateStr = formatDate(currentDate);
                                 const instanceId = `${id}_${dateStr}`;
                                 if (!seenInstanceIds.has(instanceId)) {
-                                    console.log(`Adding instance for ${dateStr} (Day: ${dayOfWeek})`); // Debug
                                     instances.push({
                                         eventId: id,
                                         date: new Date(currentDate),
@@ -1011,7 +1009,6 @@
                                     });
                                     seenInstanceIds.add(instanceId);
                                 } else {
-                                    console.log(`Duplicate instanceId ${instanceId} skipped`); // Debug
                                 }
                             }
                             currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 0, 0, 0, 0);
@@ -1028,7 +1025,6 @@
                                 const dateStr = formatDate(currentDate);
                                 const instanceId = `${id}_${dateStr}`;
                                 if (!seenInstanceIds.has(instanceId)) {
-                                    console.log(`Adding instance for ${dateStr}`); // Debug
                                     instances.push({
                                         eventId: id,
                                         date: new Date(currentDate),
@@ -1045,7 +1041,6 @@
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
                             const instanceId = `${id}_${formatDate(targetDate)}`;
                             if (!seenInstanceIds.has(instanceId)) {
-                                console.log(`Adding monthly instance for ${formatDate(targetDate)}`); // Debug
                                 instances.push({
                                     eventId: id,
                                     date: new Date(targetDate),
@@ -1072,7 +1067,6 @@
                         if (targetDate.getMonth() === month && isWithinRange(targetDate)) {
                             const instanceId = `${id}_${formatDate(targetDate)}`;
                             if (!seenInstanceIds.has(instanceId)) {
-                                console.log(`Adding monthly-day instance for ${formatDate(targetDate)}`); // Debug
                                 instances.push({
                                     eventId: id,
                                     date: new Date(targetDate),
@@ -1084,7 +1078,6 @@
                     }
                 });
 
-                console.log(`Total instances for ${monthNames[month]} ${year}:`, instances.map(i => formatDate(i.date))); // Debug
                 return instances;
             };
             // Calendar Rendering

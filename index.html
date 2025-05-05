@@ -511,10 +511,6 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Details</label>
-                            <textarea class="form-control" id="recurringDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
                             <label class="form-label">Recurrence Pattern</label>
                             <select class="form-select" id="recurrencePattern" required>
                                 <option value="daily">Daily</option>
@@ -1249,50 +1245,65 @@
                 if (!selectedTask) return;
                 let historyItems = [];
                 let title = selectedTask.title || 'Untitled Task';
+                const seenEntries = new Set();
 
                 if (selectedTask.isRecurring) {
                     const eventId = selectedTask.id.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (event) {
-                        historyItems = [];
-                        historyItems.push({
-                            date: event.startDate,
-                            time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
-                            type: event.type || 'Recurring',
-                            personName: event.personName || 'N/A',
-                            notes: event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-'
-                        });
+                        // Base event entry
+                        const baseEntryKey = `${event.startDate}_base`;
+                        if (!seenEntries.has(baseEntryKey)) {
+                            historyItems.push({
+                                date: event.startDate,
+                                time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
+                                type: event.type || 'Recurring',
+                                personName: event.personName || 'N/A',
+                                notes: event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-'
+                            });
+                            seenEntries.add(baseEntryKey);
+                        }
 
+                        // Follow-up entries
                         if (event.followUps && event.followUps.length > 0) {
                             event.followUps.forEach((followUp, index) => {
                                 const nextFollowUp = event.followUps[index + 1];
-                                historyItems.push({
-                                    date: followUp.date,
-                                    time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
-                                    type: followUp.type || 'Follow-up',
-                                    personName: followUp.personName || 'N/A',
-                                    notes: nextFollowUp ? nextFollowUp.description || '-' : '-'
-                                });
-                            });
-                        }
-
-                        if (event.history && event.history.length > 0) {
-                            event.history.forEach(entry => {
-                                if (entry.action !== 'Follow-up created') {
-                                    const changes = entry.changes || {};
-                                    const instanceDate = entry.instanceDate || event.startDate;
+                                const followUpKey = `${followUp.date}_followup_${followUp.id}`;
+                                if (!seenEntries.has(followUpKey)) {
                                     historyItems.push({
-                                        date: instanceDate,
-                                        time: changes.time ? changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day') : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
-                                        type: changes.type ? changes.type.new || event.type || 'N/A' : event.type || 'N/A',
-                                        personName: changes.personName ? changes.personName.new || event.personName || 'N/A' : event.personName || 'N/A',
-                                        notes: '-'
+                                        date: followUp.date,
+                                        time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
+                                        type: followUp.type || 'Follow-up',
+                                        personName: followUp.personName || 'N/A',
+                                        notes: nextFollowUp ? nextFollowUp.description || '-' : '-'
                                     });
+                                    seenEntries.add(followUpKey);
                                 }
                             });
                         }
 
-                        historyItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        // History entries (e.g., updates to the event)
+                        if (event.history && event.history.length > 0) {
+                            event.history.forEach(entry => {
+                                if (entry.action !== 'Follow-up created') {
+                                    const changes = entry.changes || {};
+                                    const instanceDate = entry.instanceDate || entry.date || event.startDate;
+                                    const historyKey = `${instanceDate}_${entry.action}`;
+                                    if (!seenEntries.has(historyKey)) {
+                                        historyItems.push({
+                                            date: instanceDate,
+                                            time: changes.time ? (changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day')) : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
+                                            type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
+                                            personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
+                                            notes: entry.action || '-'
+                                        });
+                                        seenEntries.add(historyKey);
+                                    }
+                                }
+                            });
+                        }
+
+                        historyItems.sort((a, b) => new Date(a.date) - new Date(b.date));
                     }
                 } else {
                     const relatedTasks = getRelatedTasks(selectedTask.id);
@@ -1307,6 +1318,7 @@
                         };
                     });
                 }
+
                 renderHistoryTable(historyItems, title);
                 taskHistoryModal.show();
             });
@@ -1428,11 +1440,16 @@
                     recurringEventsList = recurringEventsList.filter(({ event }) => 
                         event.title.toLowerCase().includes(searchQuery) ||
                         (event.personName || '').toLowerCase().includes(searchQuery) ||
-                        (event.description || '').toLowerCase().includes(searchQuery) ||
                         (event.followUps || []).some(followUp => 
                             (followUp.title || '').toLowerCase().includes(searchQuery) ||
                             (followUp.personName || '').toLowerCase().includes(searchQuery) ||
                             (followUp.description || '').toLowerCase().includes(searchQuery)
+                        ) ||
+                        (event.history || []).some(history => 
+                            (history.action || '').toLowerCase().includes(searchQuery) ||
+                            Object.values(history.changes || {}).some(change => 
+                                (change.new || change.old || '').toString().toLowerCase().includes(searchQuery)
+                            )
                         )
                     );
 
@@ -1471,58 +1488,65 @@
                                         <tbody>
                         `;
 
-                        const mainTime = event.time && event.time.start && event.time.end 
-                            ? `${event.time.start} - ${event.time.end}` 
-                            : event.time && (event.time.start || event.time.end) 
-                            ? event.time.start || event.time.end 
-                            : 'All day';
-                        const mainType = event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Recurring';
-                        const mainPersonName = event.personName || 'N/A';
-                        const mainNotes = event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-';
-
-                        contentHtml += `
-                            <tr class="task-item" data-event-id="${eventId}">
-                                <td>${dateRange}</td>
-                                <td>${mainTime}</td>
-                                <td>${mainType}</td>
-                                <td>${mainPersonName}</td>
-                                <td>${mainNotes}</td>
-                            </tr>
-                        `;
-
                         const historyItems = [];
+                        const seenEntries = new Set();
 
+                        // Add base event entry
+                        const baseEntryKey = `${event.startDate}_base`;
+                        if (!seenEntries.has(baseEntryKey)) {
+                            historyItems.push({
+                                date: event.startDate,
+                                time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
+                                type: event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Recurring',
+                                personName: event.personName || 'N/A',
+                                notes: event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-'
+                            });
+                            seenEntries.add(baseEntryKey);
+                        }
+
+                        // Add follow-up entries
                         if (event.followUps && event.followUps.length > 0) {
                             event.followUps.forEach((followUp, index) => {
                                 const nextFollowUp = event.followUps[index + 1];
-                                historyItems.push({
-                                    date: followUp.date,
-                                    time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
-                                    type: followUp.type ? followUp.type.charAt(0).toUpperCase() + followUp.type.slice(1) : 'Follow-up',
-                                    personName: followUp.personName || 'N/A',
-                                    notes: nextFollowUp ? nextFollowUp.description || '-' : '-'
-                                });
-                            });
-                        }
-
-                        if (event.history && event.history.length > 0) {
-                            event.history.forEach(entry => {
-                                if (entry.action !== 'Follow-up created') {
-                                    const changes = entry.changes || {};
-                                    const instanceDate = entry.instanceDate || event.startDate;
+                                const followUpKey = `${followUp.date}_followup_${followUp.id}`;
+                                if (!seenEntries.has(followUpKey)) {
                                     historyItems.push({
-                                        date: instanceDate,
-                                        time: changes.time ? changes.time.new || mainTime : mainTime,
-                                        type: changes.type ? changes.type.new || mainType : mainType,
-                                        personName: changes.personName ? changes.personName.new || mainPersonName : mainPersonName,
-                                        notes: '-'
+                                        date: followUp.date,
+                                        time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
+                                        type: followUp.type ? followUp.type.charAt(0).toUpperCase() + followUp.type.slice(1) : 'Follow-up',
+                                        personName: followUp.personName || 'N/A',
+                                        notes: nextFollowUp ? nextFollowUp.description || '-' : '-'
                                     });
+                                    seenEntries.add(followUpKey);
                                 }
                             });
                         }
 
+                        // Add history entries (e.g., updates to the event)
+                        if (event.history && event.history.length > 0) {
+                            event.history.forEach(entry => {
+                                if (entry.action !== 'Follow-up created') {
+                                    const changes = entry.changes || {};
+                                    const instanceDate = entry.instanceDate || entry.date || event.startDate;
+                                    const historyKey = `${instanceDate}_${entry.action}`;
+                                    if (!seenEntries.has(historyKey)) {
+                                        historyItems.push({
+                                            date: instanceDate,
+                                            time: changes.time ? (changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day')) : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
+                                            type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
+                                            personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
+                                            notes: entry.action || '-'
+                                        });
+                                        seenEntries.add(historyKey);
+                                    }
+                                }
+                            });
+                        }
+
+                        // Sort history items by date in descending order
                         historyItems.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+                        // Add history items to the table
                         historyItems.forEach(item => {
                             contentHtml += `
                                 <tr class="task-item" data-event-id="${eventId}">
@@ -1860,84 +1884,81 @@
             });
 
             $('#saveRecurringBtn').click(async () => {
-                const eventId = $('#recurringId').val() || String(Date.now());
-                const isEditing = !!$('#recurringId').val(); // Set isEditing based on whether eventId exists
-                const pattern = $('#recurrencePattern').val();
-                let eventData = {
-                    personName: $('#recurringPersonName').val(),
-                    title: $('#recurringTitle').val(),
-                    time: { start: $('#recurringStartTime').val(), end: $('#recurringEndTime').val() },
-                    type: $('#recurringType').val(),
-                    description: $('#recurringDescription').val(),
-                    startDate: $('#recurringStartDate').val(),
-                    endDate: $('#recurringEndDate').val() || null,
-                    pattern,
-                    completed: false,
-                    history: recurringEvents[eventId]?.history || [],
-                    followUps: recurringEvents[eventId]?.followUps || []
-                };
+        const eventId = $('#recurringId').val() || String(Date.now());
+        const isEditing = !!$('#recurringId').val();
+        const pattern = $('#recurrencePattern').val();
+        let eventData = {
+            personName: $('#recurringPersonName').val(),
+            title: $('#recurringTitle').val(),
+            time: { start: $('#recurringStartTime').val(), end: $('#recurringEndTime').val() },
+            type: $('#recurringType').val(),
+            startDate: $('#recurringStartDate').val(),
+            endDate: $('#recurringEndDate').val() || null,
+            pattern,
+            completed: false,
+            history: recurringEvents[eventId]?.history || [],
+            followUps: recurringEvents[eventId]?.followUps || []
+        };
 
-                if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
-                    return alert('Please fill all required fields');
-                }
+        if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
+            return alert('Please fill all required fields');
+        }
 
-                if (pattern === 'weekly') {
-                    eventData.days = [];
-                    $('#weekly-options input:checked').each(function() {
-                        eventData.days.push(parseInt($(this).val()));
-                    });
-                    if (!eventData.days.length) return alert('Please select at least one day');
-                } else if (pattern === 'monthly') {
-                    eventData.day = parseInt($('#monthlyDate').val());
-                    if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
-                } else if (pattern === 'monthly-day') {
-                    eventData.week = $('#monthlyWeek').val();
-                    eventData.day = parseInt($('#monthlyDay').val());
-                }
-
-                const checkEndDate = new Date();
-                checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
-                const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
-                for (const date of datesToCheck) {
-                    const dateStr = formatDate(date);
-                    if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
-                        alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
-                        return;
-                    }
-                }
-
-                const oldEvent = recurringEvents[eventId];
-                const changes = oldEvent ? {
-                    ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
-                    ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
-                    ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
-                    ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
-                        time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
-                    }),
-                    ...(oldEvent.description !== eventData.description && { description: { old: oldEvent.description || 'None', new: eventData.description || 'None' } }),
-                    ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
-                    ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
-                    ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
-                } : {
-                    personName: { new: eventData.personName },
-                    title: { new: eventData.title },
-                    type: { new: eventData.type },
-                    time: { new: `${eventData.time.start} - ${eventData.time.end}` },
-                    description: { new: eventData.description || 'None' },
-                    startDate: { new: eventData.startDate },
-                    endDate: { new: eventData.endDate || 'None' },
-                    pattern: { new: eventData.pattern }
-                };
-
-                if (Object.keys(changes).length) {
-                    eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
-                }
-
-                await saveRecurringEvent(eventId, eventData);
-                recurringModal.hide();
-                renderCalendar();
-                $('#recurringForm')[0].reset();
+        if (pattern === 'weekly') {
+            eventData.days = [];
+            $('#weekly-options input:checked').each(function() {
+                eventData.days.push(parseInt($(this).val()));
             });
+            if (!eventData.days.length) return alert('Please select at least one day');
+        } else if (pattern === 'monthly') {
+            eventData.day = parseInt($('#monthlyDate').val());
+            if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
+        } else if (pattern === 'monthly-day') {
+            eventData.week = $('#monthlyWeek').val();
+            eventData.day = parseInt($('#monthlyDay').val());
+        }
+
+        const checkEndDate = new Date();
+        checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
+        const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
+        for (const date of datesToCheck) {
+            const dateStr = formatDate(date);
+            if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
+                alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
+                return;
+            }
+        }
+
+        const oldEvent = recurringEvents[eventId];
+        const changes = oldEvent ? {
+            ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
+            ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
+            ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
+            ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
+                time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
+            }),
+            ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
+            ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
+            ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
+        } : {
+            personName: { new: eventData.personName },
+            title: { new: eventData.title },
+            type: { new: eventData.type },
+            time: { new: `${eventData.time.start} - ${eventData.time.end}` },
+            startDate: { new: eventData.startDate },
+            endDate: { new: eventData.endDate || 'None' },
+            pattern: { new: eventData.pattern }
+        };
+
+        if (Object.keys(changes).length) {
+            eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
+        }
+
+        await saveRecurringEvent(eventId, eventData);
+        recurringModal.hide();
+        renderCalendar();
+        $('#recurringForm')[0].reset();
+    });
 
             $(document).on('click', '.edit-recurring-btn', function() {
                 const eventId = $(this).closest('.card').data('event-id');

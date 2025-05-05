@@ -1209,8 +1209,8 @@
                 allTasks.sort((a, b) => a.date.localeCompare(b.date));
                 return allTasks;
             };
-            const renderHistoryTable = (historyItems, note) => {
-                $('#task-history-note').text(note);
+            const renderHistoryTable = (historyItems, title) => {
+                $('#task-history-note').text(title || 'Task History');
                 $('#task-history-table-head').html(`
                     <tr>
                         <th>Date</th>
@@ -1240,27 +1240,16 @@
                 }
             };
 
-
-            // Updated view-history-btn click handler
             $('#view-history-btn').click(() => {
                 if (!selectedTask) return;
                 let historyItems = [];
-                let note = '';
+                let title = selectedTask.title || 'Untitled Task';
+
                 if (selectedTask.isRecurring) {
-                    // Handle recurring event
                     const eventId = selectedTask.id.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (event) {
-                        const startDateStr = new Date(event.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                        const endDateStr = event.endDate
-                            ? new Date(event.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                            : 'No end date';
-                        note = `Recurring task from ${startDateStr} to ${endDateStr}`;
-
-                        // Combine history and follow-ups
                         historyItems = [];
-
-                        // Add main event as the first entry
                         historyItems.push({
                             date: event.startDate,
                             time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
@@ -1269,11 +1258,10 @@
                             notes: event.description || 'No notes'
                         });
 
-                        // Add follow-ups from followUps array using instance date
                         if (event.followUps && event.followUps.length > 0) {
                             event.followUps.forEach(followUp => {
                                 historyItems.push({
-                                    date: followUp.date, // Use instance date (e.g., 1st May)
+                                    date: followUp.date,
                                     time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
                                     type: followUp.type || 'Follow-up',
                                     personName: followUp.personName || 'N/A',
@@ -1282,12 +1270,10 @@
                             });
                         }
 
-                        // Add other history entries (e.g., updates)
                         if (event.history && event.history.length > 0) {
                             event.history.forEach(entry => {
                                 if (entry.action !== 'Follow-up created') {
                                     const changes = entry.changes || {};
-                                    // Use instanceDate if available, else fall back to event startDate
                                     const instanceDate = entry.instanceDate || event.startDate;
                                     historyItems.push({
                                         date: instanceDate,
@@ -1300,13 +1286,10 @@
                             });
                         }
 
-                        // Sort by instance date in descending order
                         historyItems.sort((a, b) => new Date(b.date) - new Date(a.date));
                     }
                 } else {
-                    // Handle normal task with related tasks and follow-ups (unchanged)
                     const relatedTasks = getRelatedTasks(selectedTask.id);
-                    note = 'Related Tasks and Follow-ups';
                     historyItems = relatedTasks.map(({ task, date }) => ({
                         date: date,
                         time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
@@ -1315,7 +1298,7 @@
                         notes: task.description || 'No notes'
                     }));
                 }
-                renderHistoryTable(historyItems, note);
+                renderHistoryTable(historyItems, title);
                 taskHistoryModal.show();
             });
 
@@ -1325,7 +1308,7 @@
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             };
 
-    // Updated renderAllTasks function
+            // Updated renderAllTasks function
             const renderAllTasks = () => {
                 let html = `
                     <div class="d-flex justify-content-between align-items-center mb-4">

@@ -1803,7 +1803,7 @@
                 const startTime = $('#taskStartTime').val();
                 const endTime = $('#taskEndTime').val();
                 const type = $('#taskType').val();
-                const description = $('#taskDescription').val().trim();
+                // const description = $('#taskDescription').val().trim();
                 const newDate = $('#taskDate').val();
                 const time = startTime || endTime ? { start: startTime, end: endTime } : null;
 
@@ -1815,7 +1815,7 @@
                     personName,
                     time,
                     type,
-                    description,
+                    // description,
                     completed: false,
                     followUps: [],
                     followUpFrom: $('#taskId').val() ? findTask(taskId)?.task.followUpFrom : null

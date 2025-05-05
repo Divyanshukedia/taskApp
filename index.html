@@ -686,12 +686,36 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <p id="task-completion-status" class="me-auto mb-0 text-muted"></p>
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
-
+    
+    <div class="modal fade" id="completionDescriptionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="completionModalTitle"></h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="completionDescriptionForm">
+                        <div class="mb-3">
+                            <label for="completionDescription" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="completionDescription" rows="4" placeholder="Enter any notes or details about this status change"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="saveCompletionDescriptionBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div id="sidebar-overlay" class="position-fixed top-0 left-0 w-100 h-100 bg-dark opacity-50 d-none" style="z-index: 1025;"></div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -735,6 +759,7 @@
             const editOptionsModal = new bootstrap.Modal('#editOptionsModal');
             const followUpModal = new bootstrap.Modal('#followUpModal');
             const taskHistoryModal = new bootstrap.Modal('#taskHistoryModal');
+            const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
             // Existing variables and initialization remain unchanged
             let flatpickrInstances = {};
 
@@ -1218,19 +1243,21 @@
                 historyItems.forEach(item => {
                     const entryDate = new Date(item.date);
                     const timeStr = item.time || 'All day';
-                    // Use toLocaleDateString with options for dd/mm/yyyy format
                     const formattedDate = entryDate.toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric'
                     });
+                    const notes = item.changes?.description || 
+                                (item.notes && item.notes !== '-' ? item.notes : 
+                                (item.action ? item.action : '-'));
                     const row = `
                         <tr>
                             <td>${formattedDate}</td>
                             <td>${timeStr}</td>
                             <td>${item.type || 'N/A'}</td>
                             <td>${item.personName || 'N/A'}</td>
-                            <td>${item.notes || '-'}</td>
+                            <td>${notes}</td>
                         </tr>
                     `;
                     tbody.append(row);
@@ -1238,8 +1265,32 @@
                 if (!historyItems.length) {
                     tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
                 }
+
+                // Update modal footer with latest completion status
+                let completionStatus = '';
+                const statusEntries = historyItems
+                    .filter(item => 
+                        item.action === 'Marked as completed' && item.changes?.completed?.new === true ||
+                        item.action === 'Marked as incomplete' && item.changes?.completed?.new === false
+                    )
+                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+                if (statusEntries.length > 0) {
+                    const latestEntry = statusEntries[0];
+                    const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    if (latestEntry.action === 'Marked as completed') {
+                        completionStatus = `Task closed on ${statusDate}`;
+                    } else if (latestEntry.action === 'Marked as incomplete') {
+                        completionStatus = `Task reopened on ${statusDate}`;
+                    }
+                }
+                $('#task-completion-status').text(completionStatus);
             };
 
+            // Modified view-history-btn handler to ensure correct history items
             $('#view-history-btn').click(() => {
                 if (!selectedTask) return;
                 let historyItems = [];
@@ -1281,23 +1332,22 @@
                             });
                         }
 
-                        // History entries (e.g., updates to the event)
+                        // History entries including completion status
                         if (event.history && event.history.length > 0) {
                             event.history.forEach(entry => {
-                                if (entry.action !== 'Follow-up created') {
-                                    const changes = entry.changes || {};
-                                    const instanceDate = entry.instanceDate || entry.date || event.startDate;
-                                    const historyKey = `${instanceDate}_${entry.action}`;
-                                    if (!seenEntries.has(historyKey)) {
-                                        historyItems.push({
-                                            date: instanceDate,
-                                            time: changes.time ? (changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day')) : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
-                                            type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
-                                            personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
-                                            notes: entry.action || '-'
-                                        });
-                                        seenEntries.add(historyKey);
-                                    }
+                                const changes = entry.changes || {};
+                                const instanceDate = entry.instanceDate || entry.date || event.startDate;
+                                const historyKey = `${instanceDate}_${entry.action}`;
+                                if (!seenEntries.has(historyKey)) {
+                                    historyItems.push({
+                                        date: instanceDate,
+                                        time: changes.time ? (changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day')) : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
+                                        type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
+                                        personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
+                                        action: entry.action,
+                                        changes: entry.changes || { description: entry.action }
+                                    });
+                                    seenEntries.add(historyKey);
                                 }
                             });
                         }
@@ -1306,16 +1356,28 @@
                     }
                 } else {
                     const relatedTasks = getRelatedTasks(selectedTask.id);
-                    historyItems = relatedTasks.map(({ task, date }) => {
+                    historyItems = relatedTasks.flatMap(({ task, date }) => {
                         const followUpTask = getImmediateFollowUp(task.id);
-                        return {
-                            date: date,
+                        const historyEntries = (task.history || []).map(entry => ({
+                            date: entry.date || date,
                             time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
                             type: task.type || 'N/A',
                             personName: task.personName || 'N/A',
-                            notes: followUpTask ? (followUpTask.task.description || '-') : '-'
-                        };
+                            action: entry.action,
+                            changes: entry.changes || { description: followUpTask ? (followUpTask.task.description || '-') : '-' }
+                        }));
+                        return [
+                            {
+                                date: date,
+                                time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
+                                type: task.type || 'N/A',
+                                personName: task.personName || 'N/A',
+                                notes: followUpTask ? (followUpTask.task.description || '-') : '-'
+                            },
+                            ...historyEntries
+                        ];
                     });
+                    historyItems.sort((a, b) => new Date(a.date) - new Date(b.date));
                 }
 
                 renderHistoryTable(historyItems, title);
@@ -1426,14 +1488,38 @@
                             processedTaskIds.add(relatedTask.id);
                         });
 
+                        // Add completion status below the table
+                        let completionStatus = '';
+                        const statusEntries = relatedTasks
+                            .flatMap(({ task }) => task.history || [])
+                            .filter(entry => 
+                                (entry.action === 'Marked as completed' && entry.changes?.completed?.new === true) ||
+                                (entry.action === 'Marked as incomplete' && entry.changes?.completed?.new === false)
+                            )
+                            .sort((a, b) => new Date(b.date) - new Date(a.date));
+                        if (statusEntries.length > 0) {
+                            const latestEntry = statusEntries[0];
+                            const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                            if (latestEntry.action === 'Marked as completed') {
+                                completionStatus = `Task closed on ${statusDate}`;
+                            } else if (latestEntry.action === 'Marked as incomplete') {
+                                completionStatus = `Task reopened on ${statusDate}`;
+                            }
+                        }
                         contentHtml += `
                                         </tbody>
                                     </table>
                                 </div>
+                                <p class="text-muted mt-2">${completionStatus}</p>
                             </div>
                         `;
                     });
 
+                    // Handle recurring events
                     let recurringEventsList = Object.entries(recurringEvents).map(([eventId, event]) => ({ eventId, event }));
 
                     recurringEventsList = recurringEventsList.filter(({ event }) => 
@@ -1521,7 +1607,7 @@
                             });
                         }
 
-                        // Add history entries (e.g., updates to the event)
+                        // Add history entries
                         if (event.history && event.history.length > 0) {
                             event.history.forEach(entry => {
                                 if (entry.action !== 'Follow-up created') {
@@ -1534,7 +1620,8 @@
                                             time: changes.time ? (changes.time.new || (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day')) : (event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day'),
                                             type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
                                             personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
-                                            notes: entry.action || '-'
+                                            action: entry.action,
+                                            changes: entry.changes || { description: entry.action }
                                         });
                                         seenEntries.add(historyKey);
                                     }
@@ -1558,10 +1645,33 @@
                             `;
                         });
 
+                        // Add completion status for recurring events
+                        let completionStatus = '';
+                        const statusEntries = historyItems
+                            .filter(item => 
+                                (item.action === 'Marked as completed' && item.changes?.completed?.new === true) ||
+                                (item.action === 'Marked as incomplete' && item.changes?.completed?.new === false)
+                            )
+                            .sort((a, b) => new Date(b.date) - new Date(a.date));
+                        if (statusEntries.length > 0) {
+                            const latestEntry = statusEntries[0];
+                            const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                            if (latestEntry.action === 'Marked as completed') {
+                                completionStatus = `Event closed on ${statusDate}`;
+                            } else if (latestEntry.action === 'Marked as incomplete') {
+                                completionStatus = `Event reopened on ${statusDate}`;
+                            }
+                        }
+
                         contentHtml += `
                                         </tbody>
                                     </table>
                                 </div>
+                                <p class="text-muted mt-2">${completionStatus}</p>
                             </div>
                         `;
                     });
@@ -2083,46 +2193,67 @@
             });
 
             // Updated click handler to toggle completion status
-            $('#markCompletedBtn').click(async () => {
+            $('#markCompletedBtn').click(() => {
                 const { taskId, taskDate, isRecurring } = $('#editOptionsModal').data();
-                if (isRecurring) {
-                    const eventId = taskId.split('_')[0];
-                    const event = recurringEvents[eventId];
-                    if (event) {
-                        const newCompletedStatus = !event.completed;
-                        const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
-                        event.completed = newCompletedStatus;
-                        event.history = event.history || [];
-                        event.history.unshift({
-                            date: new Date().toISOString(),
-                            action: action,
-                            changes: { completed: { old: !newCompletedStatus, new: newCompletedStatus } }
-                        });
-                        await saveRecurringEvent(eventId, event);
-                        renderCalendar();
-                        showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
+                $('#completionDescription').val(''); // Clear previous description
+                const isCurrentlyCompleted = isRecurring ? 
+                    recurringEvents[taskId.split('_')[0]]?.completed : 
+                    tasks[taskDate]?.find(t => String(t.id) === String(taskId))?.completed;
+                
+                $('#completionModalTitle').text(isCurrentlyCompleted ? 
+                    'Mark Task as Incomplete' : 
+                    'Mark Task as Completed');
+                
+                $('#saveCompletionDescriptionBtn').off('click').on('click', async () => {
+                    const description = $('#completionDescription').val().trim();
+                    const newCompletedStatus = !isCurrentlyCompleted;
+                    const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
+
+                    if (isRecurring) {
+                        const eventId = taskId.split('_')[0];
+                        const event = recurringEvents[eventId];
+                        if (event) {
+                            event.completed = newCompletedStatus;
+                            event.history = event.history || [];
+                            event.history.unshift({
+                                date: new Date().toISOString(),
+                                action,
+                                changes: { 
+                                    completed: { old: !newCompletedStatus, new: newCompletedStatus },
+                                    description: description || 'No description provided'
+                                }
+                            });
+                            await saveRecurringEvent(eventId, event);
+                            renderCalendar();
+                            showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
+                        }
+                    } else {
+                        if (!tasks[taskDate]) {
+                            console.error(`No tasks found for date: ${taskDate}`);
+                            return;
+                        }
+                        const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
+                        if (task) {
+                            task.completed = newCompletedStatus;
+                            task.history = task.history || [];
+                            task.history.unshift({
+                                date: new Date().toISOString(),
+                                action,
+                                changes: { 
+                                    completed: { old: !newCompletedStatus, new: newCompletedStatus },
+                                    description: description || 'No description provided'
+                                }
+                            });
+                            await saveTasks(taskDate, tasks[taskDate]);
+                            renderCalendar();
+                            showTaskDetails(task, taskDate);
+                        }
                     }
-                } else {
-                    if (!tasks[taskDate]) {
-                        console.error(`No tasks found for date: ${taskDate}`);
-                        return;
-                    }
-                    const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
-                    if (task) {
-                        const newCompletedStatus = !task.completed;
-                        const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
-                        task.completed = newCompletedStatus;
-                        task.history.unshift({
-                            date: new Date().toISOString(),
-                            action: action,
-                            changes: { completed: { old: !newCompletedStatus, new: newCompletedStatus } }
-                        });
-                        await saveTasks(taskDate, tasks[taskDate]);
-                        renderCalendar();
-                        showTaskDetails(task, taskDate);
-                    }
-                }
-                editOptionsModal.hide();
+                    completionDescriptionModal.hide();
+                    editOptionsModal.hide();
+                });
+
+                completionDescriptionModal.show();
             });
 
             $('#openFollowUpModalBtn').click(() => {

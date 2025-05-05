@@ -2119,13 +2119,21 @@
             $('#editOptionsModal').on('show.bs.modal', function () {
                 if (selectedTask) {
                     const markCompletedBtn = $('#markCompletedBtn');
-                    if (selectedTask.completed) {
-                        markCompletedBtn.text('Mark as Incomplete');
-                        markCompletedBtn.removeClass('btn-success').addClass('btn-secondary');
+                    const isCompleted = selectedTask.completed;
+                    
+                    // Update Mark Complete/Incomplete button
+                    if (isCompleted) {
+                        markCompletedBtn.text('Mark as Incomplete')
+                            .removeClass('btn-success')
+                            .addClass('btn-secondary');
                     } else {
-                        markCompletedBtn.text('Mark as Completed');
-                        markCompletedBtn.removeClass('btn-warning').addClass('btn-success');
+                        markCompletedBtn.text('Mark as Completed')
+                            .removeClass('btn-secondary')
+                            .addClass('btn-success');
                     }
+
+                    // Show/hide other buttons based on completion status
+                    $('#editTaskDetailsBtn, #openFollowUpModalBtn').toggle(!isCompleted);
                 }
             });
 

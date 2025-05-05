@@ -1218,9 +1218,15 @@
                 historyItems.forEach(item => {
                     const entryDate = new Date(item.date);
                     const timeStr = item.time || 'All day';
+                    // Use toLocaleDateString with options for dd/mm/yyyy format
+                    const formattedDate = entryDate.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
                     const row = `
                         <tr>
-                            <td>${entryDate.toLocaleDateString()}</td>
+                            <td>${formattedDate}</td>
                             <td>${timeStr}</td>
                             <td>${item.type || 'N/A'}</td>
                             <td>${item.personName || 'N/A'}</td>

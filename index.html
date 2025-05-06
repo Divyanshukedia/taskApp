@@ -8,7 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        /* Existing styles remain unchanged */
         .flatpickr-input {
             cursor: pointer;
         }
@@ -40,8 +39,7 @@
             height: 100px;
             cursor: pointer;
             position: relative;
-            font-weight: bold; /* Added to make dates bold */
-
+            font-weight: bold;
         }
         .calendar-day:hover {
             background-color: rgba(0, 122, 255, 0.05);
@@ -357,9 +355,15 @@
                                 <img id="profile-pic-preview-image" class="d-none" src="" alt="Profile">
                             </div>
                             <input type="file" id="profile-picture-input" accept="image/*" class="d-none">
-                            <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
-                                <i class="fas fa-camera me-1"></i> Change Photo
-                            </button>
+                            <div class="d-flex flex-column align-items-center gap-2">
+                                <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
+                                    <i class="fas fa-camera me-1"></i> Change Photo
+                                </button>
+                                <button type="button" class="btn btn-outline-warning" id="reset-password-btn">
+                                    <i class="fas fa-key me-1"></i> Reset Password
+                                </button>
+                            </div>
+                            
                         </div>
                         <div class="col-md-8">
                             <form id="profile-form">
@@ -474,7 +478,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Recurring Event Modal -->
     <div class="modal fade" id="recurringModal" tabindex="-1" aria-hidden="true">
@@ -725,7 +728,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -762,7 +765,6 @@
             const followUpModal = new bootstrap.Modal('#followUpModal');
             const taskHistoryModal = new bootstrap.Modal('#taskHistoryModal');
             const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
-            // Existing variables and initialization remain unchanged
             let flatpickrInstances = {};
 
             const initFlatpickr = () => {
@@ -774,28 +776,26 @@
                         dateFormat: "H:i",
                         time_24hr: true,
                         minuteIncrement: 10,
-                        inline: true, // Display scrollable time picker below input
+                        inline: true,
                         onChange: function(selectedDates, dateStr, instance) {
                             $(`#${id}`).val(dateStr);
                         },
                         onOpen: function(selectedDates, dateStr, instance) {
-                            // Enable mouse wheel scrolling
                             const timeContainer = instance.calendarContainer.querySelector('.flatpickr-time');
                             if (timeContainer) {
                                 timeContainer.addEventListener('wheel', (e) => {
                                     e.preventDefault();
-                                    const delta = e.deltaY > 0 ? 10 : -10; // Scroll down or up by 10 minutes
+                                    const delta = e.deltaY > 0 ? 10 : -10;
                                     const currentTime = new Date(selectedDates[0] || new Date());
                                     currentTime.setMinutes(currentTime.getMinutes() + delta);
                                     instance.setDate(currentTime, true);
                                 });
                             }
                         },
-                        // Validate typed input to snap to 10-minute intervals
                         onValueUpdate: function(selectedDates, dateStr, instance) {
                             if (dateStr) {
                                 let [hours, minutes] = dateStr.split(':').map(Number);
-                                minutes = Math.round(minutes / 10) * 10; // Snap to nearest 10-minute interval
+                                minutes = Math.round(minutes / 10) * 10;
                                 if (minutes >= 60) {
                                     hours += 1;
                                     minutes = 0;
@@ -812,16 +812,13 @@
                 });
             };
 
-
             const getImmediateFollowUp = (taskId) => {
                 const taskData = findTask(taskId);
                 if (!taskData || !taskData.task.followUps || taskData.task.followUps.length === 0) return null;
-                // Get the first follow-up task
                 const followUpId = taskData.task.followUps[0].id;
                 return findTask(followUpId);
             };
 
-            // Call initFlatpickr when modals are shown
             $('#taskModal').on('shown.bs.modal', initFlatpickr);
             $('#recurringModal').on('shown.bs.modal', initFlatpickr);
             $('#followUpModal').on('shown.bs.modal', initFlatpickr);
@@ -959,6 +956,7 @@
                     if ($('#recurring-page').hasClass('active')) renderRecurringEvents();
                 });
             };
+
             const saveRecurringEvent = async (eventId, eventData) => {
                 if (!currentUser) return;
                 if (eventData.pattern === 'weekly' && (!eventData.days || !Array.isArray(eventData.days))) {
@@ -988,12 +986,11 @@
                 const instances = [];
                 const year = date.getFullYear();
                 const month = date.getMonth();
-                const firstDayOfMonth = new Date(year, month, 1, 0, 0, 0, 0); // Normalize to midnight
+                const firstDayOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
                 const lastDayOfMonth = new Date(year, month + 1, 0, 0, 0, 0, 0);
                 const seenInstanceIds = new Set();
 
                 Object.entries(recurringEvents).forEach(([id, event]) => {
-                    // Normalize startDate and endDate to midnight
                     const startDate = new Date(event.startDate);
                     startDate.setHours(0, 0, 0, 0);
                     const endDate = event.endDate ? new Date(event.endDate) : null;
@@ -1035,7 +1032,6 @@
                                         task: { ...event, id: instanceId, isRecurring: true }
                                     });
                                     seenInstanceIds.add(instanceId);
-                                } else {
                                 }
                             }
                             currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 0, 0, 0, 0);
@@ -1107,6 +1103,7 @@
 
                 return instances;
             };
+
             // Calendar Rendering
             const renderCalendar = () => {
                 const year = currentDate.getFullYear();
@@ -1126,7 +1123,6 @@
                 getRecurringInstances(currentDate).forEach(({ date, task }) => {
                     const dateStr = formatDate(date);
                     monthTasks[dateStr] = monthTasks[dateStr] || [];
-                    // Only add if task ID is unique
                     if (!monthTasks[dateStr].some(t => t.id === task.id)) {
                         monthTasks[dateStr].push(task);
                     }
@@ -1161,7 +1157,6 @@
                     .filter(i => isSameDay(i.date, selectedDate))
                     .map(i => i.task);
                 
-                // Combine regular and recurring tasks, removing duplicates by ID
                 const allTasks = (tasks[dateStr] || []).concat(recurringInstances);
                 const uniqueTasks = [];
                 const seenTaskIds = new Set();
@@ -1175,7 +1170,7 @@
 
                 $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
                 $('#no-tasks-message').toggleClass('d-none', uniqueTasks.length > 0);
-                $('#tasks-list').empty(); // Clear previous tasks
+                $('#tasks-list').empty();
                 $('#tasks-list').html(uniqueTasks.map(task => `
                     <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-is-recurring="${task.isRecurring || false}">
                         <div class="d-flex justify-content-between align-items-start">
@@ -1187,6 +1182,7 @@
                 `).join(''));
                 $('#task-details').toggleClass('d-none', !selectedTask);
             };
+
             const showTaskDetails = (task, taskDate) => {
                 selectedTask = task;
                 selectedDate = new Date(taskDate);
@@ -1230,6 +1226,7 @@
                 allTasks.sort((a, b) => a.date.localeCompare(b.date));
                 return allTasks;
             };
+
             const renderHistoryTable = (historyItems, title) => {
                 $('#task-history-note').text(title || 'Task History');
                 $('#task-history-table-head').html(`
@@ -1268,14 +1265,13 @@
                     tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
                 }
 
-                // Update modal footer with latest completion status
                 let completionStatus = '';
                 const statusEntries = historyItems
                     .filter(item => 
                         item.action === 'Marked as completed' && item.changes?.completed?.new === true ||
                         item.action === 'Marked as incomplete' && item.changes?.completed?.new === false
                     )
-                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (statusEntries.length > 0) {
                     const latestEntry = statusEntries[0];
                     const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
@@ -1292,7 +1288,6 @@
                 $('#task-completion-status').text(completionStatus);
             };
 
-            // Modified view-history-btn handler to ensure correct history items
             $('#view-history-btn').click(() => {
                 if (!selectedTask) return;
                 let historyItems = [];
@@ -1303,7 +1298,6 @@
                     const eventId = selectedTask.id.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (event) {
-                        // Base event entry
                         const baseEntryKey = `${event.startDate}_base`;
                         if (!seenEntries.has(baseEntryKey)) {
                             historyItems.push({
@@ -1316,7 +1310,6 @@
                             seenEntries.add(baseEntryKey);
                         }
 
-                        // Follow-up entries
                         if (event.followUps && event.followUps.length > 0) {
                             event.followUps.forEach((followUp, index) => {
                                 const nextFollowUp = event.followUps[index + 1];
@@ -1334,7 +1327,6 @@
                             });
                         }
 
-                        // History entries including completion status
                         if (event.history && event.history.length > 0) {
                             event.history.forEach(entry => {
                                 const changes = entry.changes || {};
@@ -1390,7 +1382,6 @@
                 const d = new Date(date);
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             };
-
 
             const renderAllTasks = () => {
                 let html = `
@@ -1921,7 +1912,6 @@
                 const startTime = $('#taskStartTime').val();
                 const endTime = $('#taskEndTime').val();
                 const type = $('#taskType').val();
-                // const description = $('#taskDescription').val().trim();
                 const newDate = $('#taskDate').val();
                 const time = startTime || endTime ? { start: startTime, end: endTime } : null;
 
@@ -1933,7 +1923,6 @@
                     personName,
                     time,
                     type,
-                    // description,
                     completed: false,
                     followUps: [],
                     followUpFrom: $('#taskId').val() ? findTask(taskId)?.task.followUpFrom : null
@@ -1943,7 +1932,6 @@
                 const oldDate = oldTaskData ? oldTaskData.date : null;
 
                 if (oldTaskData && oldDate !== newDate) {
-                    // Remove task from old date
                     if (tasks[oldDate]) {
                         tasks[oldDate] = tasks[oldDate].filter(t => String(t.id) !== String(taskId));
                         if (tasks[oldDate].length === 0) {
@@ -1953,16 +1941,13 @@
                             await saveTasks(oldDate, tasks[oldDate]);
                         }
                     }
-                    // Add task to new date
                     tasks[newDate] = tasks[newDate] || [];
                     tasks[newDate].push(task);
                     await saveTasks(newDate, tasks[newDate]);
                 } else if (oldTaskData) {
-                    // Update task in place if date hasn't changed
                     tasks[oldDate] = tasks[oldDate].map(t => String(t.id) === String(taskId) ? task : t);
                     await saveTasks(oldDate, tasks[oldDate]);
                 } else {
-                    // New task
                     tasks[newDate] = tasks[newDate] || [];
                     tasks[newDate].push(task);
                     await saveTasks(newDate, tasks[newDate]);
@@ -1975,6 +1960,20 @@
                 if ($('#tasks-page').hasClass('active')) renderAllTasks();
             });
 
+            $('#reset-password-btn').click(async () => {
+                if (!currentUser) return;
+                const email = currentUser.email;
+                try {
+                    $('#reset-password-btn').prop('disabled', true).text('Sending...');
+                    await sendPasswordResetEmail(auth, email);
+                    alert('Password reset email sent! Please check your inbox.');
+                } catch (error) {
+                    console.error('Error sending password reset email:', error);
+                    alert('Failed to send password reset email. Please try again.');
+                } finally {
+                    $('#reset-password-btn').prop('disabled', false).text('Reset Password');
+                }
+            });
             $('#add-recurring-btn').click(() => {
                 $('#recurringForm')[0].reset();
                 $('#recurringId').val('');
@@ -1995,81 +1994,81 @@
             });
 
             $('#saveRecurringBtn').click(async () => {
-        const eventId = $('#recurringId').val() || String(Date.now());
-        const isEditing = !!$('#recurringId').val();
-        const pattern = $('#recurrencePattern').val();
-        let eventData = {
-            personName: $('#recurringPersonName').val(),
-            title: $('#recurringTitle').val(),
-            time: { start: $('#recurringStartTime').val(), end: $('#recurringEndTime').val() },
-            type: $('#recurringType').val(),
-            startDate: $('#recurringStartDate').val(),
-            endDate: $('#recurringEndDate').val() || null,
-            pattern,
-            completed: false,
-            history: recurringEvents[eventId]?.history || [],
-            followUps: recurringEvents[eventId]?.followUps || []
-        };
+                const eventId = $('#recurringId').val() || String(Date.now());
+                const isEditing = !!$('#recurringId').val();
+                const pattern = $('#recurrencePattern').val();
+                let eventData = {
+                    personName: $('#recurringPersonName').val(),
+                    title: $('#recurringTitle').val(),
+                    time: { start: $('#recurringStartTime').val(), end: $('#recurringEndTime').val() },
+                    type: $('#recurringType').val(),
+                    startDate: $('#recurringStartDate').val(),
+                    endDate: $('#recurringEndDate').val() || null,
+                    pattern,
+                    completed: false,
+                    history: recurringEvents[eventId]?.history || [],
+                    followUps: recurringEvents[eventId]?.followUps || []
+                };
 
-        if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
-            return alert('Please fill all required fields');
-        }
+                if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
+                    return alert('Please fill all required fields');
+                }
 
-        if (pattern === 'weekly') {
-            eventData.days = [];
-            $('#weekly-options input:checked').each(function() {
-                eventData.days.push(parseInt($(this).val()));
+                if (pattern === 'weekly') {
+                    eventData.days = [];
+                    $('#weekly-options input:checked').each(function() {
+                        eventData.days.push(parseInt($(this).val()));
+                    });
+                    if (!eventData.days.length) return alert('Please select at least one day');
+                } else if (pattern === 'monthly') {
+                    eventData.day = parseInt($('#monthlyDate').val());
+                    if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
+                } else if (pattern === 'monthly-day') {
+                    eventData.week = $('#monthlyWeek').val();
+                    eventData.day = parseInt($('#monthlyDay').val());
+                }
+
+                const checkEndDate = new Date();
+                checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
+                const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
+                for (const date of datesToCheck) {
+                    const dateStr = formatDate(date);
+                    if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
+                        alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
+                        return;
+                    }
+                }
+
+                const oldEvent = recurringEvents[eventId];
+                const changes = oldEvent ? {
+                    ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
+                    ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
+                    ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
+                    ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
+                        time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
+                    }),
+                    ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
+                    ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
+                    ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
+                } : {
+                    personName: { new: eventData.personName },
+                    title: { new: eventData.title },
+                    type: { new: eventData.type },
+                    time: { new: `${eventData.time.start} - ${eventData.time.end}` },
+                    startDate: { new: eventData.startDate },
+                    endDate: { new: eventData.endDate || 'None' },
+                    pattern: { new: eventData.pattern }
+                };
+
+                if (Object.keys(changes).length) {
+                    eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
+                }
+
+                await saveRecurringEvent(eventId, eventData);
+                recurringModal.hide();
+                renderCalendar();
+                $('#recurringForm')[0].reset();
             });
-            if (!eventData.days.length) return alert('Please select at least one day');
-        } else if (pattern === 'monthly') {
-            eventData.day = parseInt($('#monthlyDate').val());
-            if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
-        } else if (pattern === 'monthly-day') {
-            eventData.week = $('#monthlyWeek').val();
-            eventData.day = parseInt($('#monthlyDay').val());
-        }
-
-        const checkEndDate = new Date();
-        checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
-        const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
-        for (const date of datesToCheck) {
-            const dateStr = formatDate(date);
-            if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
-                alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
-                return;
-            }
-        }
-
-        const oldEvent = recurringEvents[eventId];
-        const changes = oldEvent ? {
-            ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
-            ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
-            ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
-            ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
-                time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
-            }),
-            ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
-            ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
-            ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
-        } : {
-            personName: { new: eventData.personName },
-            title: { new: eventData.title },
-            type: { new: eventData.type },
-            time: { new: `${eventData.time.start} - ${eventData.time.end}` },
-            startDate: { new: eventData.startDate },
-            endDate: { new: eventData.endDate || 'None' },
-            pattern: { new: eventData.pattern }
-        };
-
-        if (Object.keys(changes).length) {
-            eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
-        }
-
-        await saveRecurringEvent(eventId, eventData);
-        recurringModal.hide();
-        renderCalendar();
-        $('#recurringForm')[0].reset();
-    });
 
             $(document).on('click', '.edit-recurring-btn', function() {
                 const eventId = $(this).closest('.card').data('event-id');

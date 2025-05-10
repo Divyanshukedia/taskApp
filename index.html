@@ -8,7 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        /* Existing styles remain unchanged */
         .flatpickr-input {
             cursor: pointer;
         }
@@ -37,11 +36,16 @@
             z-index: 1040;
         }
         .calendar-day {
-            height: 100px;
+            width: 100px; /* Fixed width for all tiles */
+            height: 100px; /* Fixed height for all tiles */
             cursor: pointer;
             position: relative;
-            font-weight: bold; /* Added to make dates bold */
-
+            font-weight: bold;
+            overflow: hidden; /* Prevent content from overflowing */
+        }
+        #calendar {
+            table-layout: fixed; /* Ensure table cells maintain fixed size */
+            width: 100%;
         }
         .calendar-day:hover {
             background-color: rgba(0, 122, 255, 0.05);
@@ -120,6 +124,17 @@
         .task-history-table {
             font-size: 0.85em;
         }
+        .calendar-day .task-titles {
+            font-size: 0.7em;
+            color: #6c757d;
+            margin-top: 5px;
+            height: 1.2em; /* Fixed height for task titles */
+            width: 90%; /* Ensure it fits within tile */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.2em;
+        }
         @media (max-width: 992px) {
             .sidebar {
                 border-right: none;
@@ -141,10 +156,16 @@
         }
         @media (max-width: 768px) {
             .calendar-day {
+                width: 70px; /* Adjusted for smaller screens */
                 height: 70px;
             }
             .task-history-table {
                 font-size: 0.78em;
+            }
+            .calendar-day .task-titles {
+                font-size: 0.6em;
+                height: 1em;
+                line-height: 1em;
             }
         }
         .nav-link.active {
@@ -1126,7 +1147,6 @@
                 getRecurringInstances(currentDate).forEach(({ date, task }) => {
                     const dateStr = formatDate(date);
                     monthTasks[dateStr] = monthTasks[dateStr] || [];
-                    // Only add if task ID is unique
                     if (!monthTasks[dateStr].some(t => t.id === task.id)) {
                         monthTasks[dateStr].push(task);
                     }
@@ -1145,7 +1165,18 @@
                                 isSameDay(new Date(year, month, date), selectedDate) ? 'selected' : '',
                                 monthTasks[dateStr]?.length > 0 ? 'has-tasks' : ''
                             ].filter(Boolean).join(' ');
-                            calendarBody += `<td class="${classes}" data-date="${dateStr}"><div>${date}</div></td>`;
+                            const taskTitles = monthTasks[dateStr]?.map(task => {
+                                const fullTitle = task.title;
+                                const displayWord = fullTitle.length > 5 ? fullTitle.substring(0, 5) + '..' : fullTitle;
+                                return { display: displayWord, full: fullTitle };
+                            }).filter(t => t.full);
+                            const displayText = taskTitles?.map(t => t.display).join(', ') || '';
+                            const fullText = taskTitles?.map(t => t.full).join(', ') || '';
+                            calendarBody += `
+                                <td class="${classes}" data-date="${dateStr}">
+                                    <div>${date}</div>
+                                    ${displayText ? `<div class="task-titles" title="${fullText}">${displayText}</div>` : ''}
+                                </td>`;
                             date++;
                         }
                     }

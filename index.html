@@ -36,15 +36,15 @@
             z-index: 1040;
         }
         .calendar-day {
-            width: 100px; /* Fixed width for all tiles */
-            height: 100px; /* Fixed height for all tiles */
+            width: 100px;
+            height: 100px;
             cursor: pointer;
             position: relative;
             font-weight: bold;
-            overflow: hidden; /* Prevent content from overflowing */
+            overflow: hidden;
         }
         #calendar {
-            table-layout: fixed; /* Ensure table cells maintain fixed size */
+            table-layout: fixed;
             width: 100%;
         }
         .calendar-day:hover {
@@ -128,8 +128,8 @@
             font-size: 0.7em;
             color: #6c757d;
             margin-top: 5px;
-            height: 1.2em; /* Fixed height for task titles */
-            width: 90%; /* Ensure it fits within tile */
+            height: 1.2em;
+            width: 90%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -156,7 +156,7 @@
         }
         @media (max-width: 768px) {
             .calendar-day {
-                width: 70px; /* Adjusted for smaller screens */
+                width: 70px;
                 height: 70px;
             }
             .task-history-table {
@@ -386,7 +386,7 @@
                                     <i class="fas fa-key me-1"></i> Reset Password
                                 </button>
                             </div>
-                            
+
                         </div>
                         <div class="col-md-8">
                             <form id="profile-form">
@@ -501,7 +501,7 @@
             </div>
         </div>
     </div>
-
+    
 
     <!-- Recurring Event Modal -->
     <div class="modal fade" id="recurringModal" tabindex="-1" aria-hidden="true">
@@ -789,7 +789,6 @@
             const followUpModal = new bootstrap.Modal('#followUpModal');
             const taskHistoryModal = new bootstrap.Modal('#taskHistoryModal');
             const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
-            // Existing variables and initialization remain unchanged
             let flatpickrInstances = {};
 
             const initFlatpickr = () => {
@@ -798,40 +797,52 @@
                     flatpickrInstances[id] = flatpickr(`#${id}`, {
                         enableTime: true,
                         noCalendar: true,
-                        dateFormat: "H:i",
-                        time_24hr: true,
+                        dateFormat: "h:i K", // 12-hour format with AM/PM
+                        time_24hr: false, // Enable 12-hour format
                         minuteIncrement: 10,
-                        inline: true, // Display scrollable time picker below input
+                        inline: true,
                         onChange: function(selectedDates, dateStr, instance) {
                             $(`#${id}`).val(dateStr);
                         },
                         onOpen: function(selectedDates, dateStr, instance) {
-                            // Enable mouse wheel scrolling
                             const timeContainer = instance.calendarContainer.querySelector('.flatpickr-time');
                             if (timeContainer) {
                                 timeContainer.addEventListener('wheel', (e) => {
                                     e.preventDefault();
-                                    const delta = e.deltaY > 0 ? 10 : -10; // Scroll down or up by 10 minutes
+                                    const delta = e.deltaY > 0 ? 10 : -10;
                                     const currentTime = new Date(selectedDates[0] || new Date());
                                     currentTime.setMinutes(currentTime.getMinutes() + delta);
                                     instance.setDate(currentTime, true);
                                 });
                             }
                         },
-                        // Validate typed input to snap to 10-minute intervals
                         onValueUpdate: function(selectedDates, dateStr, instance) {
                             if (dateStr) {
-                                let [hours, minutes] = dateStr.split(':').map(Number);
-                                minutes = Math.round(minutes / 10) * 10; // Snap to nearest 10-minute interval
-                                if (minutes >= 60) {
-                                    hours += 1;
-                                    minutes = 0;
-                                }
-                                hours = Math.min(23, Math.max(0, hours));
-                                minutes = Math.min(59, Math.max(0, minutes));
-                                const newTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-                                if (newTime !== dateStr) {
-                                    instance.setDate(newTime, true);
+                                // Parse the input time string (e.g., "2:30 PM")
+                                const regex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
+                                const match = dateStr.match(regex);
+                                if (match) {
+                                    let hours = parseInt(match[1]);
+                                    const minutes = parseInt(match[2]);
+                                    const period = match[3].toUpperCase();
+                                    if (period === 'PM' && hours !== 12) hours += 12;
+                                    if (period === 'AM' && hours === 12) hours = 0;
+                                    // Snap to 10-minute intervals
+                                    const snappedMinutes = Math.round(minutes / 10) * 10;
+                                    let newHours = hours;
+                                    let newMinutes = snappedMinutes;
+                                    if (snappedMinutes >= 60) {
+                                        newHours += 1;
+                                        newMinutes = 0;
+                                    }
+                                    newHours = Math.min(23, Math.max(0, newHours));
+                                    // Convert back to 12-hour format
+                                    const displayHours = newHours % 12 === 0 ? 12 : newHours % 12;
+                                    const newPeriod = newHours >= 12 ? 'PM' : 'AM';
+                                    const newTime = `${displayHours}:${String(newMinutes).padStart(2, '0')} ${newPeriod}`;
+                                    if (newTime !== dateStr) {
+                                        instance.setDate(newTime, true);
+                                    }
                                 }
                             }
                         }
@@ -839,16 +850,13 @@
                 });
             };
 
-
             const getImmediateFollowUp = (taskId) => {
                 const taskData = findTask(taskId);
                 if (!taskData || !taskData.task.followUps || taskData.task.followUps.length === 0) return null;
-                // Get the first follow-up task
                 const followUpId = taskData.task.followUps[0].id;
                 return findTask(followUpId);
             };
 
-            // Call initFlatpickr when modals are shown
             $('#taskModal').on('shown.bs.modal', initFlatpickr);
             $('#recurringModal').on('shown.bs.modal', initFlatpickr);
             $('#followUpModal').on('shown.bs.modal', initFlatpickr);
@@ -862,7 +870,6 @@
                 $('#sidebar-overlay').addClass('d-none');
             });
 
-            // Auth state listener
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     currentUser = user;
@@ -883,7 +890,6 @@
                 }
             });
 
-            // Profile Management
             const loadUserProfile = async () => {
                 if (!currentUser) return;
                 const profileRef = doc(db, 'users', currentUser.uid, 'private', 'profile');
@@ -945,7 +951,6 @@
                 return await getDownloadURL(storageRef);
             };
 
-            // Task Management
             const loadUserTasks = () => {
                 if (!currentUser) return;
                 onSnapshot(collection(db, 'users', currentUser.uid, 'tasks'), snapshot => {
@@ -974,7 +979,6 @@
                 return null;
             };
 
-            // Recurring Events Management
             const loadRecurringEvents = () => {
                 if (!currentUser) return;
                 onSnapshot(collection(db, 'users', currentUser.uid, 'recurringEvents'), snapshot => {
@@ -986,6 +990,7 @@
                     if ($('#recurring-page').hasClass('active')) renderRecurringEvents();
                 });
             };
+
             const saveRecurringEvent = async (eventId, eventData) => {
                 if (!currentUser) return;
                 if (eventData.pattern === 'weekly' && (!eventData.days || !Array.isArray(eventData.days))) {
@@ -1010,17 +1015,15 @@
                 }
             };
 
-            // Calculate Recurring Event Instances
             const getRecurringInstances = (date) => {
                 const instances = [];
                 const year = date.getFullYear();
                 const month = date.getMonth();
-                const firstDayOfMonth = new Date(year, month, 1, 0, 0, 0, 0); // Normalize to midnight
+                const firstDayOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
                 const lastDayOfMonth = new Date(year, month + 1, 0, 0, 0, 0, 0);
                 const seenInstanceIds = new Set();
 
                 Object.entries(recurringEvents).forEach(([id, event]) => {
-                    // Normalize startDate and endDate to midnight
                     const startDate = new Date(event.startDate);
                     startDate.setHours(0, 0, 0, 0);
                     const endDate = event.endDate ? new Date(event.endDate) : null;
@@ -1062,7 +1065,6 @@
                                         task: { ...event, id: instanceId, isRecurring: true }
                                     });
                                     seenInstanceIds.add(instanceId);
-                                } else {
                                 }
                             }
                             currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 0, 0, 0, 0);
@@ -1134,7 +1136,7 @@
 
                 return instances;
             };
-            // Calendar Rendering
+
             const renderCalendar = () => {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
@@ -1198,7 +1200,6 @@
                     .filter(i => isSameDay(i.date, selectedDate))
                     .map(i => i.task);
                 
-                // Combine regular and recurring tasks, removing duplicates by ID
                 const allTasks = (tasks[dateStr] || []).concat(recurringInstances);
                 const uniqueTasks = [];
                 const seenTaskIds = new Set();
@@ -1212,7 +1213,7 @@
 
                 $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
                 $('#no-tasks-message').toggleClass('d-none', uniqueTasks.length > 0);
-                $('#tasks-list').empty(); // Clear previous tasks
+                $('#tasks-list').empty();
                 $('#tasks-list').html(uniqueTasks.map(task => `
                     <li class="task-item p-3 mb-2 bg-white rounded shadow-sm ${task.completed ? 'completed' : ''}" data-task-id="${task.id}" data-is-recurring="${task.isRecurring || false}">
                         <div class="d-flex justify-content-between align-items-start">
@@ -1224,6 +1225,7 @@
                 `).join(''));
                 $('#task-details').toggleClass('d-none', !selectedTask);
             };
+
             const showTaskDetails = (task, taskDate) => {
                 selectedTask = task;
                 selectedDate = new Date(taskDate);
@@ -1267,6 +1269,7 @@
                 allTasks.sort((a, b) => a.date.localeCompare(b.date));
                 return allTasks;
             };
+
             const renderHistoryTable = (historyItems, title) => {
                 $('#task-history-note').text(title || 'Task History');
                 $('#task-history-table-head').html(`
@@ -1282,7 +1285,6 @@
                 historyItems.forEach(item => {
                     const entryDate = new Date(item.date);
                     const timeStr = item.time || 'All day';
-                    // Use toLocaleDateString with options for dd/mm/yyyy format
                     const formattedDate = entryDate.toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: '2-digit',
@@ -1306,14 +1308,13 @@
                     tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
                 }
 
-                // Update modal footer with latest completion status
                 let completionStatus = '';
                 const statusEntries = historyItems
                     .filter(item => 
                         item.action === 'Marked as completed' && item.changes?.completed?.new === true ||
                         item.action === 'Marked as incomplete' && item.changes?.completed?.new === false
                     )
-                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (statusEntries.length > 0) {
                     const latestEntry = statusEntries[0];
                     const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
@@ -1330,7 +1331,6 @@
                 $('#task-completion-status').text(completionStatus);
             };
 
-            // Modified view-history-btn handler to ensure correct history items
             $('#view-history-btn').click(() => {
                 if (!selectedTask) return;
                 let historyItems = [];
@@ -1341,7 +1341,6 @@
                     const eventId = selectedTask.id.split('_')[0];
                     const event = recurringEvents[eventId];
                     if (event) {
-                        // Base event entry
                         const baseEntryKey = `${event.startDate}_base`;
                         if (!seenEntries.has(baseEntryKey)) {
                             historyItems.push({
@@ -1354,7 +1353,6 @@
                             seenEntries.add(baseEntryKey);
                         }
 
-                        // Follow-up entries
                         if (event.followUps && event.followUps.length > 0) {
                             event.followUps.forEach((followUp, index) => {
                                 const nextFollowUp = event.followUps[index + 1];
@@ -1372,7 +1370,6 @@
                             });
                         }
 
-                        // History entries including completion status
                         if (event.history && event.history.length > 0) {
                             event.history.forEach(entry => {
                                 const changes = entry.changes || {};
@@ -1417,7 +1414,6 @@
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             };
 
-
             const renderAllTasks = () => {
                 let html = `
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1439,7 +1435,6 @@
                 `;
 
                 $('#all-tasks-container').html(html);
-
                 const renderTasksContent = () => {
                     let contentHtml = '';
                     const searchQuery = $('#task-search').val().toLowerCase();

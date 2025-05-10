@@ -378,9 +378,15 @@
                                 <img id="profile-pic-preview-image" class="d-none" src="" alt="Profile">
                             </div>
                             <input type="file" id="profile-picture-input" accept="image/*" class="d-none">
-                            <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
-                                <i class="fas fa-camera me-1"></i> Change Photo
-                            </button>
+                            <div class="d-flex flex-column align-items-center gap-2">
+                                <button class="btn btn-outline-primary btn-sm" id="change-profile-pic-btn">
+                                    <i class="fas fa-camera me-1"></i> Change Photo
+                                </button>
+                                <button type="button" class="btn btn-outline-warning" id="reset-password-btn">
+                                    <i class="fas fa-key me-1"></i> Reset Password
+                                </button>
+                            </div>
+                            
                         </div>
                         <div class="col-md-8">
                             <form id="profile-form">
@@ -746,7 +752,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -1995,6 +2001,20 @@
                 if ($('#tasks-page').hasClass('active')) renderAllTasks();
             });
 
+            $('#reset-password-btn').click(async () => {
+                if (!currentUser) return;
+                const email = currentUser.email;
+                try {
+                    $('#reset-password-btn').prop('disabled', true).text('Sending...');
+                    await sendPasswordResetEmail(auth, email);
+                    alert('Password reset email sent! Please check your inbox.');
+                } catch (error) {
+                    console.error('Error sending password reset email:', error);
+                    alert('Failed to send password reset email. Please try again.');
+                } finally {
+                    $('#reset-password-btn').prop('disabled', false).text('Reset Password');
+                }
+            });
             $('#add-recurring-btn').click(() => {
                 $('#recurringForm')[0].reset();
                 $('#recurringId').val('');

@@ -57,36 +57,36 @@
             background-color: rgba(0, 122, 255, 0.15);
             border-color: #007bff;
         }
-.calendar-day .task-indicators {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    flex-wrap: wrap;
-    width: 100%;
-}
+        .calendar-day .task-indicators {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
 
-.calendar-day .task-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-}
+        .calendar-day .task-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
 
-.calendar-day .task-dot.open {
-    background-color: #007bff; /* Blue for open tasks */
-}
+        .calendar-day .task-dot.open {
+            background-color: #007bff; /* Blue for open tasks */
+        }
 
-.calendar-day .task-dot.completed {
-    background-color: #28a745; /* Green for completed tasks */
-}
+        .calendar-day .task-dot.completed {
+            background-color: #28a745; /* Green for completed tasks */
+        }
 
-/* Remove the old has-tasks::after rule */
-.calendar-day.has-tasks::after {
-    display: none;
-}
+        /* Remove the old has-tasks::after rule */
+        .calendar-day.has-tasks::after {
+            display: none;
+        }
         .task-item {
             border-left: 3px solid #007bff;
             transition: all 0.2s;
@@ -269,6 +269,9 @@
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
+                <div class="text-center mt-3">
+                    <a href="#" id="forgot-password-link" class="text-muted small">Forgot Password?</a>
+                </div>
             </div>
         </div>
     </div>
@@ -771,7 +774,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
@@ -1156,71 +1159,71 @@
                 return instances;
             };
 
-const renderCalendar = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    $('#current-month').text(`${monthNames[month]} ${year}`);
+            const renderCalendar = () => {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                $('#current-month').text(`${monthNames[month]} ${year}`);
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    let date = 1;
-    let calendarBody = '';
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                let date = 1;
+                let calendarBody = '';
 
-    const monthTasks = {};
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = formatDate(new Date(year, month, d));
-        monthTasks[dateStr] = tasks[dateStr] || [];
-    }
-    getRecurringInstances(currentDate).forEach(({ date, task }) => {
-        const dateStr = formatDate(date);
-        monthTasks[dateStr] = monthTasks[dateStr] || [];
-        if (!monthTasks[dateStr].some(t => t.id === task.id)) {
-            monthTasks[dateStr].push(task);
-        }
-    });
+                const monthTasks = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = formatDate(new Date(year, month, d));
+                    monthTasks[dateStr] = tasks[dateStr] || [];
+                }
+                getRecurringInstances(currentDate).forEach(({ date, task }) => {
+                    const dateStr = formatDate(date);
+                    monthTasks[dateStr] = monthTasks[dateStr] || [];
+                    if (!monthTasks[dateStr].some(t => t.id === task.id)) {
+                        monthTasks[dateStr].push(task);
+                    }
+                });
 
-    for (let i = 0; i < 6 && date <= daysInMonth; i++) {
-        calendarBody += '<tr>';
-        for (let j = 0; j < 7; j++) {
-            if (i === 0 && j < firstDay || date > daysInMonth) {
-                calendarBody += '<td class="calendar-day empty"></td>';
-            } else {
-                const dateStr = formatDate(new Date(year, month, date));
-                const classes = [
-                    'calendar-day',
-                    isSameDay(new Date(year, month, date), new Date()) ? 'today' : '',
-                    isSameDay(new Date(year, month, date), selectedDate) ? 'selected' : '',
-                    monthTasks[dateStr]?.length > 0 ? 'has-tasks' : ''
-                ].filter(Boolean).join(' ');
-                
-                // Generate task dots
-                const taskDots = monthTasks[dateStr]?.map(task => {
-                    const statusClass = task.completed ? 'completed' : 'open';
-                    return `<span class="task-dot ${statusClass}"></span>`;
-                }).join('') || '';
+                for (let i = 0; i < 6 && date <= daysInMonth; i++) {
+                    calendarBody += '<tr>';
+                    for (let j = 0; j < 7; j++) {
+                        if (i === 0 && j < firstDay || date > daysInMonth) {
+                            calendarBody += '<td class="calendar-day empty"></td>';
+                        } else {
+                            const dateStr = formatDate(new Date(year, month, date));
+                            const classes = [
+                                'calendar-day',
+                                isSameDay(new Date(year, month, date), new Date()) ? 'today' : '',
+                                isSameDay(new Date(year, month, date), selectedDate) ? 'selected' : '',
+                                monthTasks[dateStr]?.length > 0 ? 'has-tasks' : ''
+                            ].filter(Boolean).join(' ');
+                            
+                            // Generate task dots
+                            const taskDots = monthTasks[dateStr]?.map(task => {
+                                const statusClass = task.completed ? 'completed' : 'open';
+                                return `<span class="task-dot ${statusClass}"></span>`;
+                            }).join('') || '';
 
-                const taskTitles = monthTasks[dateStr]?.map(task => {
-                    const fullTitle = task.title;
-                    const displayWord = fullTitle.length > 5 ? fullTitle.substring(0, 5) + '..' : fullTitle;
-                    return { display: displayWord, full: fullTitle };
-                }).filter(t => t.full);
-                const displayText = taskTitles?.map(t => t.display).join(', ') || '';
-                const fullText = taskTitles?.map(t => t.full).join(', ') || '';
-                
-                calendarBody += `
-                    <td class="${classes}" data-date="${dateStr}">
-                        <div>${date}</div>
-                        ${displayText ? `<div class="task-titles" title="${fullText}">${displayText}</div>` : ''}
-                        <div class="task-indicators">${taskDots}</div>
-                    </td>`;
-                date++;
-            }
-        }
-        calendarBody += '</tr>';
-    }
-    $('#calendar-body').html(calendarBody);
-    updateTasksPanel();
-};
+                            const taskTitles = monthTasks[dateStr]?.map(task => {
+                                const fullTitle = task.title;
+                                const displayWord = fullTitle.length > 5 ? fullTitle.substring(0, 5) + '..' : fullTitle;
+                                return { display: displayWord, full: fullTitle };
+                            }).filter(t => t.full);
+                            const displayText = taskTitles?.map(t => t.display).join(', ') || '';
+                            const fullText = taskTitles?.map(t => t.full).join(', ') || '';
+                            
+                            calendarBody += `
+                                <td class="${classes}" data-date="${dateStr}">
+                                    <div>${date}</div>
+                                    ${displayText ? `<div class="task-titles" title="${fullText}">${displayText}</div>` : ''}
+                                    <div class="task-indicators">${taskDots}</div>
+                                </td>`;
+                            date++;
+                        }
+                    }
+                    calendarBody += '</tr>';
+                }
+                $('#calendar-body').html(calendarBody);
+                updateTasksPanel();
+            };
 
             const updateTasksPanel = () => {
                 const dateStr = formatDate(selectedDate);
@@ -2607,6 +2610,52 @@ const renderCalendar = () => {
                     $('#sidebar-overlay').addClass('d-none');
                 }
             });
+
+        $('#forgot-password-link').click(async (e) => {
+            e.preventDefault();
+            const email = $('#login-email').val().trim().toLowerCase(); // Normalize to lowercase
+            if (!email) {
+                alert('Please enter your email address to reset your password.');
+                return;
+            }
+            try {
+                $('#forgot-password-link').text('Checking...').addClass('disabled');
+                const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+                if (signInMethods.length === 0) {
+                    // Try sending the password reset email as a fallback to confirm non-existence
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        alert('Password reset email sent! Please check your inbox (and spam/junk folder).');
+                        $('#login-email').val('');
+                        $('#login-password').val('');
+                        return;
+                    } catch (resetError) {
+                        if (resetError.code === 'auth/user-not-found') {
+                            alert('No account found with this email address.');
+                            return;
+                        }
+                        throw resetError; // Rethrow other errors
+                    }
+                }
+                
+                // If sign-in methods exist or fallback succeeded, send password reset email
+                $('#forgot-password-link').text('Sending reset email...');
+                await sendPasswordResetEmail(auth, email);
+                alert('Password reset email sent! Please check your inbox (and spam/junk folder).');
+                $('#login-email').val('');
+                $('#login-password').val('');
+            } catch (error) {
+                let errorMessage = 'Failed to process your request. Please try again.';
+                if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Please enter a valid email address.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many attempts. Please try again later.';
+                }
+                alert(errorMessage);
+            } finally {
+                $('#forgot-password-link').text('Forgot Password?').removeClass('disabled');
+            }
+        });
         });
     </script>
 </body>

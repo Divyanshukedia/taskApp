@@ -1348,89 +1348,102 @@
                 return descendants;
             };
 
-            const getRelatedTasks = (taskId) => {
-                const rootTask = findRootTask(taskId);
-                if (!rootTask) return [];
-                const allTasks = getAllDescendantTasks(rootTask);
-                allTasks.sort((a, b) => a.date.localeCompare(b.date));
-                return allTasks.map(({ task, date }) => {
-                    const followUpTask = getImmediateFollowUp(task.id);
-                    return {
-                        id: task.id,
-                        date: date,
-                        time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
-                        type: task.type || 'N/A',
-                        personName: task.personName || 'N/A',
-                        notes: followUpTask ? (followUpTask.task.description || '-') : '-'
-                    };
-                });
-            };
-            const renderHistoryTable = (historyItems, title) => {
-                $('#task-history-note').text(title || 'Task History');
-                $('#task-history-table-head').html(`
-                    <tr>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Type</th>
-                        <th>Person Name</th>
-                        <th>Notes</th>
-                    </tr>
-                `);
-                const tbody = $('#task-history-table-body').empty();
-                historyItems.forEach((item, index) => {
-                    const entryDate = new Date(item.date);
-                    const timeStr = item.time || 'All day';
-                    const formattedDate = entryDate.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    const notes = item.changes?.description ||
-                                (item.notes && item.notes !== '-' ? item.notes :
-                                (item.action ? item.action : '-'));
-                    const isRecurring = item.isRecurring || (item.taskId && item.taskId.includes('_'));
-                    const taskId = item.taskId || (isRecurring ? item.eventId + '_' + item.date : item.id);
-                    const row = `
-                        <tr class="history-row" 
-                            data-task-id="${taskId || ''}" 
-                            data-date="${item.date}" 
-                            data-is-recurring="${isRecurring ? 'true' : 'false'}"
-                            style="cursor: pointer;">
-                            <td>${formattedDate}</td>
-                            <td>${timeStr}</td>
-                            <td>${item.type || 'N/A'}</td>
-                            <td>${item.personName || 'N/A'}</td>
-                            <td>${notes}</td>
-                        </tr>
-                    `;
-                    tbody.append(row);
-                });
-                if (!historyItems.length) {
-                    tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
-                }
+const getRelatedTasks = (taskId) => {
+    const rootTask = findRootTask(taskId);
+    if (!rootTask) return [];
+    const allTasks = getAllDescendantTasks(rootTask);
+    allTasks.sort((a, b) => a.date.localeCompare(b.date));
+    return allTasks.map(({ task, date }) => {
+        const followUpTask = getImmediateFollowUp(task.id);
+        // Check task.history for completion-related entries
+        let notes = followUpTask ? (followUpTask.task.description || '-') : '-';
+        if (task.history) {
+            const completionEntry = task.history
+                .filter(entry => entry.action === 'Marked as completed' || entry.action === 'Marked as incomplete')
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0]; // Get the latest completion entry
+            if (completionEntry && completionEntry.changes?.description) {
+                notes = completionEntry.changes.description;
+            }
+        }
+        return {
+            id: task.id,
+            date: date,
+            time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
+            type: task.type || 'N/A',
+            personName: task.personName || 'N/A',
+            notes: notes
+        };
+    });
+};
+const renderHistoryTable = (historyItems, title) => {
+    $('#task-history-note').text(title || 'Task History');
+    $('#task-history-table-head').html(`
+        <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Person Name</th>
+            <th>Notes</th>
+        </tr>
+    `);
+    const tbody = $('#task-history-table-body').empty();
+    historyItems.forEach((item, index) => {
+        const entryDate = new Date(item.date);
+        const timeStr = item.time || 'All day';
+        const formattedDate = entryDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        // Prioritize changes.description for completion actions, then item.notes, then action
+        const notes = (item.action === 'Marked as completed' || item.action === 'Marked as incomplete') && item.changes?.description
+            ? item.changes.description
+            : item.notes && item.notes !== '-' ? item.notes
+            : item.action ? item.action
+            : '-';
+        const isRecurring = item.isRecurring || (item.taskId && item.taskId.includes('_'));
+        const taskId = item.taskId || (isRecurring ? item.eventId + '_' + item.date : item.id);
+        const row = `
+            <tr class="history-row" 
+                data-task-id="${taskId || ''}" 
+                data-date="${item.date}" 
+                data-is-recurring="${isRecurring ? 'true' : 'false'}"
+                style="cursor: pointer;">
+                <td>${formattedDate}</td>
+                <td>${timeStr}</td>
+                <td>${item.type || 'N/A'}</td>
+                <td>${item.personName || 'N/A'}</td>
+                <td>${notes}</td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+    if (!historyItems.length) {
+        tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
+    }
 
-                let completionStatus = '';
-                const statusEntries = historyItems
-                    .filter(item => 
-                        item.action === 'Marked as completed' && item.changes?.completed?.new === true ||
-                        item.action === 'Marked as incomplete' && item.changes?.completed?.new === false
-                    )
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-                if (statusEntries.length > 0) {
-                    const latestEntry = statusEntries[0];
-                    const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    if (latestEntry.action === 'Marked as completed') {
-                        completionStatus = `Task closed on ${statusDate}`;
-                    } else if (latestEntry.action === 'Marked as incomplete') {
-                        completionStatus = `Task reopened on ${statusDate}`;
-                    }
-                }
-                $('#task-completion-status').text(completionStatus);
-            };
+    let completionStatus = '';
+    const statusEntries = historyItems
+        .filter(item => 
+            item.action === 'Marked as completed' && item.changes?.completed?.new === true ||
+            item.action === 'Marked as incomplete' && item.changes?.completed?.new === false
+        )
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (statusEntries.length > 0) {
+        const latestEntry = statusEntries[0];
+        const statusDate = new Date(latestEntry.date).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        if (latestEntry.action === 'Marked as completed') {
+            completionStatus = `Task closed on ${statusDate}`;
+        } else if (latestEntry.action === 'Marked as incomplete') {
+            completionStatus = `Task reopened on ${statusDate}`;
+        }
+    }
+    $('#task-completion-status').text(completionStatus);
+};
             $(document).on('click', '.history-row', function() {
                 const taskId = $(this).data('task-id');
                 const dateStr = $(this).data('date');

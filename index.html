@@ -1269,6 +1269,27 @@
                     }
                 });
 
+                // Helper function to parse time string to minutes for comparison
+                const parseTimeToMinutes = (timeStr) => {
+                    if (!timeStr) return Infinity; // All-day tasks (no time) go to the end
+                    const regex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
+                    const match = timeStr.match(regex);
+                    if (!match) return Infinity;
+                    let hours = parseInt(match[1]);
+                    const minutes = parseInt(match[2]);
+                    const period = match[3].toUpperCase();
+                    if (period === 'PM' && hours !== 12) hours += 12;
+                    if (period === 'AM' && hours === 12) hours = 0;
+                    return hours * 60 + minutes;
+                };
+
+                // Sort tasks by start time (ascending)
+                uniqueTasks.sort((a, b) => {
+                    const timeA = parseTimeToMinutes(a.time?.start);
+                    const timeB = parseTimeToMinutes(b.time?.start);
+                    return timeA - timeB;
+                });
+
                 $('#tasks-date').text(selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
                 $('#no-tasks-message').toggleClass('d-none', uniqueTasks.length > 0);
                 $('#tasks-list').empty();

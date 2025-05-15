@@ -678,13 +678,13 @@
                 <div class="modal-body">
                     <form id="followUpForm">
                         <input type="hidden" id="originalTaskId">
-                        <div class="mb-3">
+                        <div class="mb-3 d-none">
                             <label class="form-label">Title</label>
-                            <input type="text" class="form-control" id="followTitle" required>
+                            <input type="text" class="form-control" id="followTitle" readonly>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Person Name</label>
-                            <input type="text" class="form-control" id="followPersonName" required>
+                            <textarea class="form-control" id="followPersonName" rows="2" required></textarea>
                         </div>
                         <div class="row mb-3">
                             <div class="col">

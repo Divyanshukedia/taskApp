@@ -847,6 +847,31 @@
             const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
             let flatpickrInstances = {};
 
+
+            // New function to validate time range
+            const validateTimeRange = (startTime, endTime) => {
+                if (!startTime || !endTime) return true; // No validation if either time is missing (all-day task)
+                const regex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
+                const startMatch = startTime.match(regex);
+                const endMatch = endTime.match(regex);
+                if (!startMatch || !endMatch) return false;
+
+                let startHours = parseInt(startMatch[1]);
+                const startMinutes = parseInt(startMatch[2]);
+                const startPeriod = startMatch[3].toUpperCase();
+                if (startPeriod === 'PM' && startHours !== 12) startHours += 12;
+                if (startPeriod === 'AM' && startHours === 12) startHours = 0;
+                const startTotalMinutes = startHours * 60 + startMinutes;
+
+                let endHours = parseInt(endMatch[1]);
+                const endMinutes = parseInt(endMatch[2]);
+                const endPeriod = endMatch[3].toUpperCase();
+                if (endPeriod === 'PM' && endHours !== 12) endHours += 12;
+                if (endPeriod === 'AM' && endHours === 12) endHours = 0;
+                const endTotalMinutes = endHours * 60 + endMinutes;
+
+                return endTotalMinutes > startTotalMinutes;
+            };
             const initFlatpickr = () => {
                 ['taskStartTime', 'taskEndTime', 'recurringStartTime', 'recurringEndTime', 'followStartTime', 'followEndTime'].forEach(id => {
                     if (flatpickrInstances[id]) flatpickrInstances[id].destroy();
@@ -2004,7 +2029,11 @@
                     alert('Please fill in all required fields');
                     return;
                 }
-
+                // Validate time range
+                if (!validateTimeRange(startTime, endTime)) {
+                    alert('End time must be after start time.');
+                    return;
+                }
                 // Check for conflicts
                 // if (hasConflict(newDate, startTime, endTime, taskId)) {
                 //     alert('This task conflicts with an existing task or recurring event on the selected date and time.');
@@ -2108,6 +2137,11 @@
 
                 if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
                     return alert('Please fill all required fields');
+                }
+                // Validate time range
+                if (!validateTimeRange(eventData.time.start, eventData.time.end)) {
+                    alert('End time must be after start time.');
+                    return;
                 }
 
                 if (pattern === 'weekly') {
@@ -2397,6 +2431,11 @@
                 const taskDate = $('#followUpDate').val();
                 const startTime = getFlatpickrTime('followStartTime');
                 const endTime = getFlatpickrTime('followEndTime');
+                // Validate time range for both recurring and non-recurring follow-ups
+                if (!validateTimeRange(startTime, endTime)) {
+                    alert('End time must be after start time.');
+                    return;
+                }
 
                 if (isRecurring) {
                     const eventId = taskId.split('_')[0];

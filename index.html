@@ -1657,214 +1657,242 @@
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             };
 
-        const renderAllTasks = () => {
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-bordered task-history-table" id="tasks-table">
-                        <thead>
-                            <tr>
-                                <th><span>Date</span><div class="resize-handle"></div></th>
-                                <th><span>Title</span><div class="resize-handle"></div></th>
-                                <th><span>Time</span><div class="resize-handle"></div></th>
-                                <th><span>Type</span><div class="resize-handle"></div></th>
-                                <th><span>Person Name</span><div class="resize-handle"></div></th>
-                                <th><span>Status</span><div class="resize-handle"></div></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tasks-content"></tbody>
-                    </table>
-                </div>
-            `;
+            const renderAllTasks = () => {
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-bordered task-history-table" id="tasks-table">
+                            <thead>
+                                <tr>
+                                    <th><span>Date</span><div class="resize-handle"></div></th>
+                                    <th><span>Title</span><div class="resize-handle"></div></th>
+                                    <th><span>Time</span><div class="resize-handle"></div></th>
+                                    <th><span>Type</span><div class="resize-handle"></div></th>
+                                    <th><span>Person Name</span><div class="resize-handle"></div></th>
+                                    <th><span>Status</span><div class="resize-handle"></div></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-content"></tbody>
+                        </table>
+                    </div>
+                `;
 
-            $('#all-tasks-container').html(html);
+                $('#all-tasks-container').html(html);
 
-            const renderTasksContent = () => {
-                let allItems = [];
-                const processedTaskIds = new Set();
+                const renderTasksContent = () => {
+                    let allItems = [];
+                    const processedTaskIds = new Set();
 
-                // Collect the latest task in each task chain
-                Object.keys(tasks).forEach(date => {
-                    (tasks[date] || []).forEach(task => {
-                        if (task.followUpFrom || processedTaskIds.has(task.id)) return;
+                    // Collect the latest task in each task chain
+                    Object.keys(tasks).forEach(date => {
+                        (tasks[date] || []).forEach(task => {
+                            if (task.followUpFrom || processedTaskIds.has(task.id)) return;
 
-                        const taskChain = getAllDescendantTasks({ task, date });
-                        if (taskChain.length === 0) return;
+                            const taskChain = getAllDescendantTasks({ task, date });
+                            if (taskChain.length === 0) return;
 
-                        taskChain.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        const latestTask = taskChain[0];
+                            taskChain.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            const latestTask = taskChain[0];
 
-                        taskChain.forEach(t => processedTaskIds.add(t.task.id));
+                            taskChain.forEach(t => processedTaskIds.add(t.task.id));
 
+                            allItems.push({
+                                type: 'task',
+                                date: latestTask.date,
+                                task: { ...latestTask.task, date: latestTask.date }
+                            });
+                        });
+                    });
+
+                    // Include recurring events
+                    Object.entries(recurringEvents).forEach(([eventId, event]) => {
                         allItems.push({
-                            type: 'task',
-                            date: latestTask.date,
-                            task: { ...latestTask.task, date: latestTask.date }
+                            type: 'recurring',
+                            date: event.startDate,
+                            event: { ...event, id: eventId, date: event.startDate }
                         });
                     });
-                });
 
-                // Include recurring events
-                Object.entries(recurringEvents).forEach(([eventId, event]) => {
-                    allItems.push({
-                        type: 'recurring',
-                        date: event.startDate,
-                        event: { ...event, id: eventId, date: event.startDate }
+                    // Custom type detection for dd/mm/yyyy dates
+                    $.fn.dataTable.ext.type.detect.unshift(function (value) {
+                        if (typeof value === 'string' && value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                            return 'date-dd-mm-yyyy';
+                        }
+                        return null;
                     });
-                });
 
-                // Initialize DataTable
-                const table = $('#tasks-table').DataTable({
-                    destroy: true,
-                    data: allItems,
-                    columns: [
-                        {
-                            data: null,
-                            render: function(data) {
-                                const date = new Date(data.type === 'task' ? data.task.date : data.event.date);
-                                return date.toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric'
-                                });
-                            }
-                        },
-                        {
-                            data: null,
-                            render: function(data) {
-                                return data.type === 'task' ? data.task.title : data.event.title;
-                            }
-                        },
-                        {
-                            data: null,
-                            render: function(data) {
-                                const d = data.type === 'task' ? data.task : data.event;
-                                return d.time?.start && d.time?.end
-                                    ? `${d.time.start} - ${d.time.end}`
-                                    : d.time?.start || d.time?.end || 'All day';
-                            }
-                        },
-                        {
-                            data: null,
-                            render: function(data) {
-                                if (data.type === 'task') {
-                                    return data.task.type
-                                        ? data.task.type.charAt(0).toUpperCase() + data.task.type.slice(1)
-                                        : 'Task';
+                    // Custom sorting for dd/mm/yyyy dates
+                    $.fn.dataTable.ext.type.order['date-dd-mm-yyyy-pre'] = function (data) {
+                        if (!data) return 0;
+                        const [day, month, year] = data.split('/').map(Number);
+                        // Create a Date object for sorting (month - 1 because JS months are 0-based)
+                        const date = new Date(year, month - 1, day);
+                        // Return timestamp for sorting
+                        return date.getTime();
+                    };
+
+                    // Initialize DataTable
+                    const table = $('#tasks-table').DataTable({
+                        destroy: true,
+                        data: allItems,
+                        columns: [
+                            {
+                                data: null,
+                                type: 'date-dd-mm-yyyy', // Use custom date type
+                                render: function (data, type) {
+                                    const date = new Date(data.type === 'task' ? data.task.date : data.event.date);
+                                    if (type === 'display' || type === 'filter') {
+                                        // Display as dd/mm/yyyy
+                                        return date.toLocaleDateString('en-GB', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric'
+                                        });
+                                    }
+                                    // For sorting, return dd/mm/yyyy string to trigger custom sorting
+                                    return date.toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric'
+                                    });
                                 }
-                                return 'Recurring';
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    return data.type === 'task' ? data.task.title : data.event.title;
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    const d = data.type === 'task' ? data.task : data.event;
+                                    return d.time?.start && d.time?.end
+                                        ? `${d.time.start} - ${d.time.end}`
+                                        : d.time?.start || d.time?.end || 'All day';
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    if (data.type === 'task') {
+                                        return data.task.type
+                                            ? data.task.type.charAt(0).toUpperCase() + data.task.type.slice(1)
+                                            : 'Task';
+                                    }
+                                    return 'Recurring';
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    return (data.type === 'task' ? data.task.personName : data.event.personName) || 'N/A';
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    const d = data.type === 'task' ? data.task : data.event;
+                                    const isDue = data.type === 'task' && isTaskDue(d, d.date);
+                                    const status = isDue ? 'Due' : d.completed ? 'Completed' : 'Pending';
+                                    return `<span class="badge ${isDue ? 'bg-danger' : d.completed ? 'bg-success' : 'bg-secondary'}">${status}</span>`;
+                                }
                             }
+                        ],
+                        pageLength: 10,
+                        language: {
+                            search: "Search tasks:",
+                            searchPlaceholder: "Title, person, or notes"
                         },
-                        {
-                            data: null,
-                            render: function(data) {
-                                return (data.type === 'task' ? data.task.personName : data.event.personName) || 'N/A';
-                            }
-                        },
-                        {
-                            data: null,
-                            render: function(data) {
-                                const d = data.type === 'task' ? data.task : data.event;
-                                const isDue = data.type === 'task' && isTaskDue(d, d.date);
-                                const status = isDue ? 'Due' : d.completed ? 'Completed' : 'Pending';
-                                return `<span class="badge ${isDue ? 'bg-danger' : d.completed ? 'bg-success' : 'bg-secondary'}">${status}</span>`;
+                        order: [[0, 'desc']], // Default sort by date descending
+                        autoWidth: false, // Disable auto-width to respect custom widths
+                        rowCallback: function (row, data) {
+                            $(row).addClass('task-item');
+                            if (data.type === 'task') {
+                                const isDue = isTaskDue(data.task, data.task.date);
+                                if (data.task.completed) $(row).addClass('completed');
+                                else if (isDue) $(row).addClass('due');
+                                $(row).attr('data-task-id', data.task.id).attr('data-date', data.task.date);
+                            } else {
+                                $(row).attr('data-event-id', data.event.id).attr('data-date', data.event.date);
                             }
                         }
-                    ],
-                    pageLength: 10,
-                    language: {
-                        search: "Search tasks:",
-                        searchPlaceholder: "Title, person, or notes"
-                    },
-                    order: [[0, 'desc']], // Default sort by date descending
-                    autoWidth: false, // Disable auto-width to respect custom widths
-                    rowCallback: function(row, data) {
-                        $(row).addClass('task-item');
-                        if (data.type === 'task') {
-                            const isDue = isTaskDue(data.task, data.task.date);
-                            if (data.task.completed) $(row).addClass('completed');
-                            else if (isDue) $(row).addClass('due');
-                            $(row).attr('data-task-id', data.task.id).attr('data-date', data.task.date);
-                        } else {
-                            $(row).attr('data-event-id', data.event.id).attr('data-date', data.event.date);
+                    });
+
+                    // Click handlers
+                    $('#tasks-table tbody').on('click', 'tr[data-task-id]', function () {
+                        const taskId = $(this).data('task-id');
+                        const date = $(this).data('date');
+                        const taskData = findTask(taskId);
+                        if (taskData) {
+                            selectedTask = taskData.task;
+                            selectedDate = new Date(date);
+                            currentDate = new Date(date);
+                            renderCalendar();
+                            showTaskDetails(taskData.task, date);
+                            $('#task-details').removeClass('d-none');
+                            showPage('calendar-page');
                         }
-                    }
-                });
+                    });
 
-                // Click handlers
-                $('#tasks-table tbody').on('click', 'tr[data-task-id]', function() {
-                    const taskId = $(this).data('task-id');
-                    const date = $(this).data('date');
-                    const taskData = findTask(taskId);
-                    if (taskData) {
-                        selectedTask = taskData.task;
-                        selectedDate = new Date(date);
-                        currentDate = new Date(date);
-                        renderCalendar();
-                        showTaskDetails(taskData.task, date);
-                        $('#task-details').removeClass('d-none');
-                        showPage('calendar-page');
-                    }
-                });
+                    $('#tasks-table tbody').on('click', 'tr[data-event-id]', function () {
+                        const eventId = String($(this).data('event-id'));
+                        const date = $(this).data('date');
+                        const event = recurringEvents[eventId];
+                        if (event) {
+                            const instanceId = `${eventId}_${formatDate(new Date(date))}`;
+                            selectedTask = { ...event, id: instanceId, isRecurring: true };
+                            selectedDate = new Date(date);
+                            currentDate = new Date(date);
+                            renderCalendar();
+                            showTaskDetails(selectedTask, date);
+                            $('#task-details').removeClass('d-none');
+                            showPage('calendar-page');
+                        }
+                    });
 
-                $('#tasks-table tbody').on('click', 'tr[data-event-id]', function() {
-                    const eventId = String($(this).data('event-id'));
-                    const date = $(this).data('date');
-                    const event = recurringEvents[eventId];
-                    if (event) {
-                        const instanceId = `${eventId}_${formatDate(new Date(date))}`;
-                        selectedTask = { ...event, id: instanceId, isRecurring: true };
-                        selectedDate = new Date(date);
-                        currentDate = new Date(date);
-                        renderCalendar();
-                        showTaskDetails(selectedTask, date);
-                        $('#task-details').removeClass('d-none');
-                        showPage('calendar-page');
-                    }
-                });
+                    // Initialize column resizing
+                    const initColumnResizing = () => {
+                        const thEls = document.querySelectorAll('#tasks-table th');
+                        thEls.forEach((th, index) => {
+                            const handle = th.querySelector('.resize-handle');
+                            if (!handle) return;
 
-                // Initialize column resizing
-                const initColumnResizing = () => {
-                    const thEls = document.querySelectorAll('#tasks-table th');
-                    thEls.forEach((th, index) => {
-                        const handle = th.querySelector('.resize-handle');
-                        if (!handle) return;
+                            handle.addEventListener('mousedown', (e) => {
+                                e.preventDefault();
+                                const startX = e.clientX;
+                                const startWidth = th.offsetWidth;
 
-                        handle.addEventListener('mousedown', (e) => {
-                            e.preventDefault();
-                            const startX = e.clientX;
-                            const startWidth = th.offsetWidth;
+                                const onMouseMove = (e) => {
+                                    const newWidth = startWidth + (e.clientX - startX);
+                                    if (newWidth > 50) { // Minimum width
+                                        th.style.width = `${newWidth}px`;
+                                        th.style.minWidth = `${newWidth}px`;
+                                        // Update DataTable column width
+                                        const column = table.column(index);
+                                        column.width(`${newWidth}px`);
+                                    }
+                                };
 
-                            const onMouseMove = (e) => {
-                                const newWidth = startWidth + (e.clientX - startX);
-                                if (newWidth > 50) { // Minimum width
-                                    th.style.width = `${newWidth}px`;
-                                    th.style.minWidth = `${newWidth}px`;
-                                    // Update DataTable column width
-                                    const column = table.column(index);
-                                    column.width(`${newWidth}px`);
-                                }
-                            };
+                                const onMouseUp = () => {
+                                    document.removeEventListener('mousemove', onMouseMove);
+                                    document.removeEventListener('mouseup', onMouseUp);
+                                    // Redraw DataTable to adjust layout
+                                    table.draw(false);
+                                };
 
-                            const onMouseUp = () => {
-                                document.removeEventListener('mousemove', onMouseMove);
-                                document.removeEventListener('mouseup', onMouseUp);
-                                // Redraw DataTable to adjust layout
-                                table.draw(false);
-                            };
-
-                            document.addEventListener('mousemove', onMouseMove);
-                            document.addEventListener('mouseup', onMouseUp);
+                                document.addEventListener('mousemove', onMouseMove);
+                                document.addEventListener('mouseup', onMouseUp);
+                            });
                         });
-                    });
+                    };
+
+                    // Call resize initialization after DataTable is drawn
+                    table.on('draw', initColumnResizing);
+                    initColumnResizing();
                 };
 
-                // Call resize initialization after DataTable is drawn
-                table.on('draw', initColumnResizing);
-                initColumnResizing();
+                renderTasksContent();
             };
-
-            renderTasksContent();
-        };
 
 
             const renderRecurringEvents = () => {
@@ -2591,10 +2619,10 @@
                     if (!followUpData.title || !followUpData.personName) return alert('Please fill all required fields');
 
                     const checkDate = event.startDate;
-                    if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
-                        alert('This follow-up conflicts with an existing task on the event date.');
-                        return;
-                    }
+                    // if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
+                    //     alert('This follow-up conflicts with an existing task on the event date.');
+                    //     return;
+                    // }
 
                     const updatedData = { ...event };
                     updatedData.history = updatedData.history || [];
@@ -2633,10 +2661,10 @@
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
                     if (!taskDate) return alert('Please select a follow-up date');
-                    if (hasConflict(taskDate, startTime, endTime)) {
-                        alert('This follow-up task conflicts with an existing task on this date.');
-                        return;
-                    }
+                    // if (hasConflict(taskDate, startTime, endTime)) {
+                    //     alert('This follow-up task conflicts with an existing task on this date.');
+                    //     return;
+                    // }
                     const followUpData = {
                         id: Date.now(),
                         personName: $('#followPersonName').val(),

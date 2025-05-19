@@ -698,55 +698,66 @@
     </div>
 
     <!-- Follow-up Modal -->
+    <!-- Follow-up Modal -->
     <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Follow-up Task</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header">
+                <h5 class="modal-title">Add Follow-up Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="followUpForm">
+                <input type="hidden" id="originalTaskId">
+                <div class="mb-3 d-none">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-control" id="followTitle" readonly>
                 </div>
-                <div class="modal-body">
-                    <form id="followUpForm">
-                        <input type="hidden" id="originalTaskId">
-                        <div class="mb-3 d-none">
-                            <label class="form-label">Title</label>
-                            <input type="text" class="form-control" id="followTitle" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Person Name</label>
-                            <textarea class="form-control" id="followPersonName" rows="2" required></textarea>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Start Time</label>
-                                <div id="followStartTime" class="flatpickr-time-container"></div>
-                            </div>
-                            <div class="col">
-                                <label class="form-label">End Time</label>
-                                <div id="followEndTime" class="flatpickr-time-container"></div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Type</label>
-                            <select class="form-select" id="followType" required>
-                                <option value="call">Call</option>
-                                <option value="meeting">Meeting</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Task Details</label>
-                            <textarea class="form-control" id="followDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3 follow-up-date-container">
-                            <label class="form-label">Follow-up Date</label>
-                            <input type="date" class="form-control" id="followUpDate" required>
-                        </div>
-                    </form>
+                <div class="row mb-3">
+                    <div class="col">
+                    <label class="form-label">Person Name</label>
+                    <textarea class="form-control" id="followPersonName" rows="2" required></textarea>
+                    </div>
+                    <div class="col">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="followType" required>
+                        <option value="call">Call</option>
+                        <option value="meeting">Meeting</option>
+                    </select>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+                <div class="row mb-3">
+                    <div class="col">
+                    <label class="form-label">Start Time</label>
+                    <div id="followStartTime" class="flatpickr-time-container"></div>
+                    </div>
+                    <div class="col">
+                    <label class="form-label">End Time</label>
+                    <div id="followEndTime" class="flatpickr-time-container"></div>
+                    </div>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Task Details</label>
+                    <textarea class="form-control" id="followDescription" rows="3"></textarea>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                    <label class="form-label">Follow-up Date</label>
+                    <input type="date" class="form-control" id="followUpDate" required>
+                    </div>
+                    <div class="col">
+                    <label class="form-label">Attachment (optional)</label>
+                    <input type="file" class="form-control" id="followAttachment"
+                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+                    <small class="form-text text-muted">Images, PDF, DOC, XLS</small>
+                    </div>
+                </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveFollowUpBtn">Save Follow-up</button>
+            </div>
             </div>
         </div>
     </div>
@@ -940,12 +951,14 @@
             };
             const setFlatpickrTime = (id, timeStr) => {
                 const instance = flatpickrInstances[id];
-                if (instance && timeStr) {
-                    instance.setDate(timeStr, true);
-                    instance.element.dataset.time = timeStr;
-                } else if (instance) {
-                    instance.clear();
-                    instance.element.dataset.time = '';
+                if (instance) {
+                    if (timeStr && timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)) {
+                        instance.setDate(timeStr, true);
+                        instance.element.dataset.time = timeStr;
+                    } else {
+                        instance.clear();
+                        instance.element.dataset.time = '';
+                    }
                 }
             };
             $('#taskModal').on('shown.bs.modal', initFlatpickr);
@@ -1409,30 +1422,50 @@
                 return descendants;
             };
 
+             const uploadFile = async (file, path) => {
+                if (!currentUser || !file) return null;
+                const storageRef = ref(storage, path);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
+            };
+
+            // Existing functions up to getRelatedTasks
             const getRelatedTasks = (taskId) => {
                 const rootTask = findRootTask(taskId);
                 if (!rootTask) return [];
                 const allTasks = getAllDescendantTasks(rootTask);
                 allTasks.sort((a, b) => a.date.localeCompare(b.date));
-                return allTasks.map(({ task, date }) => {
+                return allTasks.map(({ task, date }, index) => {
                     const followUpTask = getImmediateFollowUp(task.id);
-                    // Check task.history for completion-related entries
                     let notes = followUpTask ? (followUpTask.task.description || '-') : '-';
+                    let attachment = task.attachment || null;
+
+                    // If this task has a follow-up, assign the follow-up's attachment to this task's entry
+                    if (followUpTask && followUpTask.task.attachment && !task.followUpFrom) {
+                        attachment = followUpTask.task.attachment;
+                    }
+                    // If this task is a follow-up, do not show its own attachment
+                    if (task.followUpFrom) {
+                        attachment = null;
+                    }
+
                     if (task.history) {
                         const completionEntry = task.history
                             .filter(entry => entry.action === 'Marked as completed' || entry.action === 'Marked as incomplete')
-                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0]; // Get the latest completion entry
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
                         if (completionEntry && completionEntry.changes?.description) {
                             notes = completionEntry.changes.description;
                         }
                     }
+
                     return {
                         id: task.id,
                         date: date,
                         time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
                         type: task.type || 'N/A',
                         personName: task.personName || 'N/A',
-                        notes: notes
+                        notes: notes,
+                        attachment: attachment
                     };
                 });
             };
@@ -1445,6 +1478,7 @@
                         <th>Type</th>
                         <th>Person Name</th>
                         <th>Notes</th>
+                        <th>Attachment</th>
                     </tr>
                 `);
                 const tbody = $('#task-history-table-body').empty();
@@ -1456,7 +1490,6 @@
                         month: '2-digit',
                         year: 'numeric'
                     });
-                    // Prioritize changes.description for completion actions, then item.notes, then action
                     const notes = (item.action === 'Marked as completed' || item.action === 'Marked as incomplete') && item.changes?.description
                         ? item.changes.description
                         : item.notes && item.notes !== '-' ? item.notes
@@ -1464,6 +1497,9 @@
                         : '-';
                     const isRecurring = item.isRecurring || (item.taskId && item.taskId.includes('_'));
                     const taskId = item.taskId || (isRecurring ? item.eventId + '_' + item.date : item.id);
+                    const attachmentCell = item.attachment
+                        ? `<a href="${item.attachment.url}" target="_blank" download="${item.attachment.name}">${item.attachment.name}</a>`
+                        : '-';
                     const row = `
                         <tr class="history-row" 
                             data-task-id="${taskId || ''}" 
@@ -1475,12 +1511,13 @@
                             <td>${item.type || 'N/A'}</td>
                             <td>${item.personName || 'N/A'}</td>
                             <td>${notes}</td>
+                            <td>${attachmentCell}</td>
                         </tr>
                     `;
                     tbody.append(row);
                 });
                 if (!historyItems.length) {
-                    tbody.append('<tr><td colspan="5" class="text-muted">No history available</td></tr>');
+                    tbody.append('<tr><td colspan="6" class="text-muted">No history available</td></tr>');
                 }
 
                 let completionStatus = '';
@@ -1558,7 +1595,8 @@
                                 time: event.time?.start ? `${event.time.start} - ${event.time.end}` : 'All day',
                                 type: event.type || 'Recurring',
                                 personName: event.personName || 'N/A',
-                                notes: event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-'
+                                notes: event.followUps && event.followUps.length > 0 ? event.followUps[0].description || '-' : '-',
+                                attachment: event.attachment || null
                             });
                             seenEntries.add(baseEntryKey);
                         }
@@ -1575,7 +1613,8 @@
                                         time: followUp.time?.start ? `${followUp.time.start} - ${followUp.time.end}` : 'All day',
                                         type: followUp.type || 'Follow-up',
                                         personName: followUp.personName || 'N/A',
-                                        notes: nextFollowUp ? nextFollowUp.description || '-' : '-'
+                                        notes: nextFollowUp ? nextFollowUp.description || '-' : '-',
+                                        attachment: followUp.attachment || null
                                     });
                                     seenEntries.add(followUpKey);
                                 }
@@ -1596,7 +1635,8 @@
                                         type: changes.type ? (changes.type.new || event.type || 'N/A') : event.type || 'N/A',
                                         personName: changes.personName ? (changes.personName.new || event.personName || 'N/A') : event.personName || 'N/A',
                                         action: entry.action,
-                                        changes: entry.changes || { description: entry.action }
+                                        changes: entry.changes || { description: entry.action },
+                                        attachment: changes.attachment ? { name: changes.attachment.new, url: changes.attachment.url || '#' } : null
                                     });
                                     seenEntries.add(historyKey);
                                 }
@@ -2470,14 +2510,22 @@
 
                 if (!originalTask) return;
 
+                // Set form fields
                 $('#originalTaskId').val(taskId);
                 $('#followTitle').val(originalTask.title || '');
                 $('#followPersonName').val(originalTask.personName || '');
-                setFlatpickrTime('followStartTime', originalTask.time?.start || '');
-                setFlatpickrTime('followEndTime', originalTask.time?.end || '');
                 $('#followType').val(originalTask.type || 'call');
                 $('#followDescription').val('');
+                $('#followUpDate').val(''); // Clear date for non-recurring tasks
+                $('#followAttachment').val(''); // Clear attachment
 
+                // Set time fields using Flatpickr
+                const startTime = originalTask.time?.start || '';
+                const endTime = originalTask.time?.end || '';
+                setFlatpickrTime('followStartTime', startTime);
+                setFlatpickrTime('followEndTime', endTime);
+
+                // Update modal title and date field visibility
                 if (isRecurring) {
                     $('#followUpModal .modal-title').text('Update Recurring Event');
                     $('#followUpDate').closest('.mb-3').addClass('d-none');
@@ -2486,20 +2534,41 @@
                     $('#followUpDate').closest('.mb-3').removeClass('d-none');
                 }
 
+                // Ensure Flatpickr is initialized before showing modal
+                initFlatpickr();
                 followUpModal.show();
                 editOptionsModal.hide();
             });
-
             $('#saveFollowUpBtn').click(async () => {
                 const taskId = $('#originalTaskId').val();
                 const isRecurring = $('#editOptionsModal').data('is-recurring');
                 const taskDate = $('#followUpDate').val();
                 const startTime = getFlatpickrTime('followStartTime');
                 const endTime = getFlatpickrTime('followEndTime');
-                // Validate time range for both recurring and non-recurring follow-ups
+                const attachmentFile = $('#followAttachment')[0].files[0];
+
                 if (!validateTimeRange(startTime, endTime)) {
                     alert('End time must be after start time.');
                     return;
+                }
+
+                let attachmentData = null;
+                if (attachmentFile) {
+                    $('#saveFollowUpBtn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+                    try {
+                        const attachmentPath = `task-attachments/${currentUser.uid}/${Date.now()}_${attachmentFile.name}`;
+                        const downloadURL = await uploadFile(attachmentFile, attachmentPath);
+                        attachmentData = {
+                            url: downloadURL,
+                            name: attachmentFile.name,
+                            type: attachmentFile.type,
+                            size: attachmentFile.size
+                        };
+                    } catch (error) {
+                        alert('Failed to upload attachment');
+                        $('#saveFollowUpBtn').html('Save Follow-up');
+                        return;
+                    }
                 }
 
                 if (isRecurring) {
@@ -2515,16 +2584,17 @@
                         time: { start: startTime, end: endTime },
                         type: $('#followType').val(),
                         description: $('#followDescription').val(),
-                        date: new Date().toISOString().split('T')[0]
+                        date: new Date().toISOString().split('T')[0],
+                        attachment: attachmentData
                     };
 
                     if (!followUpData.title || !followUpData.personName) return alert('Please fill all required fields');
 
                     const checkDate = event.startDate;
-                    // if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
-                    //     alert('This follow-up conflicts with an existing task on the event date.');
-                    //     return;
-                    // }
+                    if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
+                        alert('This follow-up conflicts with an existing task on the event date.');
+                        return;
+                    }
 
                     const updatedData = { ...event };
                     updatedData.history = updatedData.history || [];
@@ -2536,7 +2606,8 @@
                         followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
                         followUpPersonName: { new: followUpData.personName },
                         followUpType: { new: followUpData.type },
-                        followUpDescription: { new: followUpData.description || 'None' }
+                        followUpDescription: { new: followUpData.description || 'None' },
+                        ...(attachmentData && { followUpAttachment: { new: attachmentData.name } })
                     };
 
                     updatedData.history.unshift({
@@ -2552,7 +2623,8 @@
                         personName: followUpData.personName,
                         time: followUpData.time,
                         type: followUpData.type,
-                        description: followUpData.description
+                        description: followUpData.description,
+                        attachment: attachmentData
                     });
 
                     await saveRecurringEvent(eventId, updatedData);
@@ -2561,10 +2633,10 @@
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
                     if (!taskDate) return alert('Please select a follow-up date');
-                    // if (hasConflict(taskDate, startTime, endTime)) {
-                    //     alert('This follow-up task conflicts with an existing task on this date.');
-                    //     return;
-                    // }
+                    if (hasConflict(taskDate, startTime, endTime)) {
+                        alert('This follow-up task conflicts with an existing task on this date.');
+                        return;
+                    }
                     const followUpData = {
                         id: Date.now(),
                         personName: $('#followPersonName').val(),
@@ -2574,7 +2646,8 @@
                         description: $('#followDescription').val(),
                         completed: false,
                         followUpFrom: taskId,
-                        history: []
+                        history: [],
+                        attachment: attachmentData
                     };
 
                     if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
@@ -2591,7 +2664,8 @@
                             type: { old: original.task.type, new: followUpData.type },
                             time: { old: `${original.task.time.start || ''} - ${original.task.time.end || ''}`, new: `${followUpData.time.start} - ${followUpData.time.end}` },
                             description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
-                            completed: { old: original.task.completed, new: false }
+                            completed: { old: original.task.completed, new: false },
+                            ...(attachmentData && { attachment: { new: attachmentData.name } })
                         }
                     });
 
@@ -2607,7 +2681,8 @@
                             followUpTitle: { new: followUpData.title },
                             followUpDate: { new: taskDate },
                             followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                            description: { new: followUpData.description || 'None' }
+                            description: { new: followUpData.description || 'None' },
+                            ...(attachmentData && { attachment: { new: attachmentData.name } })
                         }
                     });
                     original.task.followUps = original.task.followUps || [];
@@ -2624,8 +2699,10 @@
 
                 followUpModal.hide();
                 $('#followUpForm')[0].reset();
+                $('#followAttachment').val('');
                 setFlatpickrTime('followStartTime', '');
                 setFlatpickrTime('followEndTime', '');
+                $('#saveFollowUpBtn').html('Save Follow-up');
             });
 
             // Profile Handlers
@@ -2643,7 +2720,7 @@
                 if (!file) return;
                 $('#change-profile-pic-btn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
                 try {
-                    const downloadURL = await uploadProfilePicture(file);
+                    const downloadURL = await uploadFile(file, `profile-pictures/${currentUser.uid}`);
                     if (downloadURL) {
                         userProfileData.photoURL = downloadURL;
                         updateProfileDisplay();

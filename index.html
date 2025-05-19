@@ -1089,6 +1089,8 @@
                     console.error('Invalid days array for weekly recurring event');
                     return;
                 }
+                // Ensure exceptions array exists
+                eventData.exceptions = eventData.exceptions || [];
                 const eventRef = doc(db, 'users', currentUser.uid, 'recurringEvents', eventId);
                 try {
                     await setDoc(eventRef, eventData, { merge: true });
@@ -1107,6 +1109,7 @@
                 }
             };
 
+
             const getRecurringInstances = (date) => {
                 const instances = [];
                 const year = date.getFullYear();
@@ -1121,6 +1124,7 @@
                     const endDate = event.endDate ? new Date(event.endDate) : null;
                     if (endDate) endDate.setHours(0, 0, 0, 0);
                     const pattern = event.pattern;
+                    const exceptions = event.exceptions || []; // Array of dates to exclude
 
                     const isWithinRange = (d) => {
                         const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
@@ -1129,11 +1133,13 @@
                         const first = new Date(firstDayOfMonth.getFullYear(), firstDayOfMonth.getMonth(), firstDayOfMonth.getDate(), 0, 0, 0, 0);
                         const last = new Date(lastDayOfMonth.getFullYear(), lastDayOfMonth.getMonth(), lastDayOfMonth.getDate(), 0, 0, 0, 0);
 
+                        const dateStr = formatDate(dDate);
                         return (
                             (!end || dDate <= end) &&
                             dDate >= start &&
                             dDate >= first &&
-                            dDate <= last
+                            dDate <= last &&
+                            !exceptions.includes(dateStr) // Exclude dates in exceptions array
                         );
                     };
 
@@ -1228,7 +1234,6 @@
 
                 return instances;
             };
-
             const isTaskDue = (task, taskDate) => {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -2337,19 +2342,57 @@
                 }
                 editOptionsModal.hide();
             });
+
             $('#delete-task-btn').click(async () => {
-                if (!selectedTask || !confirm('Delete this task?')) return;
+                if (!selectedTask) return;
+
                 if (selectedTask.isRecurring) {
                     const eventId = selectedTask.id.split('_')[0];
-                    await deleteRecurringEvent(eventId);
+                    const instanceDateStr = formatDate(selectedDate);
+                    const event = recurringEvents[eventId];
+
+                    if (!event) return;
+
+                    // Prompt user to choose deletion scope
+                    const choice = confirm(
+                        `Delete this recurring event instance on ${selectedDate.toLocaleDateString()} only?`
+                    );
+
+                    if (choice) {
+                        // Delete only this instance by adding to exceptions
+                        event.exceptions = event.exceptions || [];
+                        if (!event.exceptions.includes(instanceDateStr)) {
+                            event.exceptions.push(instanceDateStr);
+                            event.history = event.history || [];
+                            event.history.unshift({
+                                date: new Date().toISOString(),
+                                action: 'Instance deleted',
+                                instanceDate: instanceDateStr,
+                                changes: { date: instanceDateStr }
+                            });
+                            await saveRecurringEvent(eventId, event);
+                        }
+                    } else {
+                        return;
+                    }
                 } else {
+                    // Handle non-recurring task deletion (unchanged)
+                    if (!confirm('Delete this task?')) return;
                     const dateStr = formatDate(selectedDate);
                     tasks[dateStr] = tasks[dateStr].filter(t => t.id !== selectedTask.id);
-                    await saveTasks(dateStr, tasks[dateStr]);
+                    if (tasks[dateStr].length === 0) {
+                        delete tasks[dateStr];
+                        await deleteDoc(doc(db, 'users', currentUser.uid, 'tasks', dateStr));
+                    } else {
+                        await saveTasks(dateStr, tasks[dateStr]);
+                    }
                 }
+
                 selectedTask = null;
                 renderCalendar();
+                $('#task-details').addClass('d-none');
             });
+
 
             // Updated click handler to toggle completion status
             $('#markCompletedBtn').click(() => {

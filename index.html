@@ -2062,10 +2062,10 @@
                     return;
                 }
                 // Check for conflicts
-                if (hasConflict(newDate, startTime, endTime, taskId)) {
-                    alert('This task conflicts with an existing task or recurring event on the selected date and time.');
-                    return;
-                }
+                // if (hasConflict(newDate, startTime, endTime, taskId)) {
+                //     alert('This task conflicts with an existing task or recurring event on the selected date and time.');
+                //     return;
+                // }
 
                 const task = {
                     id: taskId,
@@ -2190,10 +2190,10 @@
                 const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
                 for (const date of datesToCheck) {
                     const dateStr = formatDate(date);
-                    if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
-                        alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
-                        return;
-                    }
+                    // if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
+                    //     alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
+                    //     return;
+                    // }
                 }
 
                 const oldEvent = recurringEvents[eventId];
@@ -2521,10 +2521,10 @@
                     if (!followUpData.title || !followUpData.personName) return alert('Please fill all required fields');
 
                     const checkDate = event.startDate;
-                    if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
-                        alert('This follow-up conflicts with an existing task on the event date.');
-                        return;
-                    }
+                    // if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
+                    //     alert('This follow-up conflicts with an existing task on the event date.');
+                    //     return;
+                    // }
 
                     const updatedData = { ...event };
                     updatedData.history = updatedData.history || [];
@@ -2561,10 +2561,10 @@
                     showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
                 } else {
                     if (!taskDate) return alert('Please select a follow-up date');
-                    if (hasConflict(taskDate, startTime, endTime)) {
-                        alert('This follow-up task conflicts with an existing task on this date.');
-                        return;
-                    }
+                    // if (hasConflict(taskDate, startTime, endTime)) {
+                    //     alert('This follow-up task conflicts with an existing task on this date.');
+                    //     return;
+                    // }
                     const followUpData = {
                         id: Date.now(),
                         personName: $('#followPersonName').val(),

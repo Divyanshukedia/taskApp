@@ -1,7 +1,8 @@
 [
   {
     "origin": ["https://divyanshukedia.github.io"],
-    "method": ["GET", "PUT", "POST", "DELETE"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Authorization"],
     "maxAgeSeconds": 3600
   }
 ]

@@ -1932,37 +1932,60 @@
                         .filter(i => isSameDay(i.date, new Date(dateStr)))
                         .map(i => i.task)
                 );
-                const uniqueTasks = dateTasks.filter((task, index, self) => 
+
+                // Remove duplicates by task ID
+                const uniqueTasks = dateTasks.filter((task, index, self) =>
                     index === self.findIndex(t => t.id === task.id)
                 );
+
                 // Filter out the task being edited or instances of the recurring event being edited
-                let otherTasks = uniqueTasks.filter(t => {
+                const otherTasks = uniqueTasks.filter(t => {
                     if (excludeTaskId && t.id === excludeTaskId) return false;
                     if (excludeEventId && typeof t.id === 'string' && t.id.startsWith(excludeEventId + '_')) return false;
                     return true;
                 });
 
-                // Determine if the proposed task is all-day (no start or end time)
+                // Parse time to minutes for comparison
+                const parseTimeToMinutes = (timeStr) => {
+                    if (!timeStr) return null;
+                    const regex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
+                    const match = timeStr.match(regex);
+                    if (!match) return null;
+                    let hours = parseInt(match[1]);
+                    const minutes = parseInt(match[2]);
+                    const period = match[3].toUpperCase();
+                    if (period === 'PM' && hours !== 12) hours += 12;
+                    if (period === 'AM' && hours === 12) hours = 0;
+                    return hours * 60 + minutes;
+                };
+
                 const isProposedAllDay = !startTime || !endTime;
+                const startMinutes = parseTimeToMinutes(startTime);
+                const endMinutes = parseTimeToMinutes(endTime);
 
                 if (isProposedAllDay) {
-                    // All-day tasks conflict if any other tasks exist
+                    // All-day tasks conflict if any other tasks exist on the same date
                     return otherTasks.length > 0;
-                } else {
-                    // Check for all-day tasks among existing tasks
-                    if (otherTasks.some(t => !t.time || !t.time.start || !t.time.end)) {
-                        return true;
-                    }
-                    // Check for overlapping timed tasks
-                    for (const task of otherTasks) {
-                        if (task.time && task.time.start && task.time.end) {
-                            if (startTime < task.time.end && task.time.start < endTime) {
-                                return true; // Overlap detected
-                            }
+                }
+
+                // Check for conflicts with all-day tasks
+                if (otherTasks.some(t => !t.time || !t.time.start || !t.time.end)) {
+                    return true;
+                }
+
+                // Check for overlapping timed tasks
+                for (const task of otherTasks) {
+                    if (task.time && task.time.start && task.time.end) {
+                        const taskStartMinutes = parseTimeToMinutes(task.time.start);
+                        const taskEndMinutes = parseTimeToMinutes(task.time.end);
+                        if (taskStartMinutes === null || taskEndMinutes === null) continue;
+                        if (startMinutes < taskEndMinutes && taskStartMinutes < endMinutes) {
+                            return true; // Overlap detected
                         }
                     }
-                    return false; // No conflicts
                 }
+
+                return false;
             };
             const getRecurringDates = (eventData, startCheckDate, endCheckDate) => {
                 const dates = [];
@@ -2035,10 +2058,10 @@
                     return;
                 }
                 // Check for conflicts
-                // if (hasConflict(newDate, startTime, endTime, taskId)) {
-                //     alert('This task conflicts with an existing task or recurring event on the selected date and time.');
-                //     return;
-                // }
+                if (hasConflict(newDate, startTime, endTime, taskId)) {
+                    alert('This task conflicts with an existing task or recurring event on the selected date and time.');
+                    return;
+                }
 
                 const task = {
                     id: taskId,

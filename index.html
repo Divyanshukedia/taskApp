@@ -1819,6 +1819,7 @@
                     });
 
                     // Click handlers
+                    // Inside renderAllTasks function, replace the click handlers with this:
                     $('#tasks-table tbody').on('click', 'tr[data-task-id]', function () {
                         const taskId = $(this).data('task-id');
                         const date = $(this).data('date');
@@ -1827,10 +1828,17 @@
                             selectedTask = taskData.task;
                             selectedDate = new Date(date);
                             currentDate = new Date(date);
+                            showPage('calendar-page');
                             renderCalendar();
                             showTaskDetails(taskData.task, date);
                             $('#task-details').removeClass('d-none');
-                            showPage('calendar-page');
+                            // Open edit options modal
+                            $('#editOptionsModal').data({
+                                'task-id': taskId,
+                                'task-date': date,
+                                'is-recurring': false
+                            });
+                            editOptionsModal.show();
                         }
                     });
 
@@ -1843,10 +1851,17 @@
                             selectedTask = { ...event, id: instanceId, isRecurring: true };
                             selectedDate = new Date(date);
                             currentDate = new Date(date);
+                            showPage('calendar-page');
                             renderCalendar();
                             showTaskDetails(selectedTask, date);
                             $('#task-details').removeClass('d-none');
-                            showPage('calendar-page');
+                            // Open edit options modal
+                            $('#editOptionsModal').data({
+                                'task-id': instanceId,
+                                'task-date': date,
+                                'is-recurring': true
+                            });
+                            editOptionsModal.show();
                         }
                     });
 

@@ -301,6 +301,10 @@
         .spinner-border {
             border-width: 0.4em;
         }
+        .custom-department-input {
+            margin-top: 8px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -439,6 +443,7 @@
                                             <span class="badge bg-success me-2" id="task-status-badge">Pending</span>
                                             <span class="text-muted" id="task-time"></span>
                                         </div>
+                                        <p><strong>Department:</strong> <span id="task-department"></span></p>
                                         <p id="task-description" class="mb-3"></p>
                                     </div>
                                 </div>
@@ -551,6 +556,7 @@
                             <label class="form-label">Person Name</label>
                             <input type="text" class="form-control" id="personName" required>
                         </div>
+                        <div class="mb-3" id="task-department-container"></div> <!-- Placeholder for department -->
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
@@ -601,6 +607,7 @@
                             <label class="form-label">Person Name</label>
                             <input type="text" class="form-control" id="recurringPersonName" required>
                         </div>
+                        <div class="mb-3" id="recurring-department-container"></div> <!-- Placeholder for department -->
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
@@ -742,8 +749,9 @@
                     <div class="col">
                     <label class="form-label">Person Name</label>
                     <textarea class="form-control" id="followPersonName" rows="2" required></textarea>
-                    </div>
-                    <div class="col">
+                </div>
+                <div class="mb-3" id="follow-department-container"></div> <!-- Placeholder for department -->
+                <div class="col">
                     <label class="form-label">Type</label>
                     <select class="form-select" id="followType" required>
                         <option value="call">Call</option>
@@ -881,7 +889,37 @@
             const taskHistoryModal = new bootstrap.Modal('#taskHistoryModal');
             const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
             let flatpickrInstances = {};
+            // Existing variables and constants
+            const departments = ['Sales & Marketing', 'Accounts & Finance', 'IT', 'Digital Marketing & Content', 'Operations', 'CSS', 'HR & Admin'];
 
+            // Function to generate department field HTML
+            const renderDepartmentField = (containerId, selectId, inputId) => {
+                const departmentOptions = [
+                    '<option value="">Select Department</option>',
+                    ...departments.map(dept => `<option value="${dept}">${dept}</option>`),
+                    '<option value="Custom">Custom</option>'
+                ].join('');
+
+                const html = `
+                    <label class="form-label">Department</label>
+                    <select class="form-select" id="${selectId}" required>
+                        ${departmentOptions}
+                    </select>
+                    <input type="text" class="form-control custom-department-input" id="${inputId}" placeholder="Enter custom department">
+                `;
+                $(`#${containerId}`).html(html);
+
+                // Toggle custom input
+                $(`#${selectId}`).change(function() {
+                    const value = $(this).val();
+                    $(`#${inputId}`).toggle(value === 'Custom').prop('required', value === 'Custom');
+                });
+            };
+
+            // Render department fields for all modals
+            renderDepartmentField('task-department-container', 'task-department-select', 'task-department-custom');
+            renderDepartmentField('recurring-department-container', 'recurring-department-select', 'recurring-department-custom');
+            renderDepartmentField('follow-department-container', 'follow-department-select', 'follow-department-custom');
             // Show loading overlay and disable buttons
             const showLoading = (button = null) => {
                 $('#loading-overlay').removeClass('d-none');
@@ -1430,6 +1468,7 @@
                 selectedDate = new Date(taskDate);
                 $('#task-detail-title').text(task.title);
                 $('#task-description').html(task.description || '<p class="text-muted">No description provided.</p>');
+                $('#task-department').text(task.department || 'N/A');
                 $('#task-time').text(task.time?.start ? `${formatDate(selectedDate)}, ${task.time.start} - ${task.time.end}` : 'All day');
                 $('#task-status-badge').removeClass('bg-success bg-secondary bg-danger')
                     .addClass(task.completed ? 'bg-success' : isTaskDue(task, taskDate) ? 'bg-danger' : 'bg-secondary')
@@ -1477,6 +1516,7 @@
                 return allTasks.map(({ task, date }, index) => {
                     const followUpTask = getImmediateFollowUp(task.id);
                     let notes = followUpTask ? (followUpTask.task.description || '-') : '-';
+                    let department = followUpTask ? (followUpTask.task.department || 'N/A') : (task.department || 'N/A');
                     let attachment = task.attachment || null;
 
                     // If this task has a follow-up, assign the follow-up's attachment to this task's entry
@@ -1503,6 +1543,7 @@
                         time: task.time?.start ? `${task.time.start} - ${task.time.end}` : 'All day',
                         type: task.type || 'N/A',
                         personName: task.personName || 'N/A',
+                        department: department,
                         notes: notes,
                         attachment: attachment
                     };
@@ -1516,6 +1557,7 @@
                         <th>Time</th>
                         <th>Type</th>
                         <th>Person Name</th>
+                        <th>Department</th>
                         <th>Notes</th>
                         <th>Attachment</th>
                     </tr>
@@ -1549,6 +1591,7 @@
                             <td>${timeStr}</td>
                             <td>${item.type || 'N/A'}</td>
                             <td>${item.personName || 'N/A'}</td>
+                            <td>${item.department || 'N/A'}</td>
                             <td>${notes}</td>
                             <td>${attachmentCell}</td>
                         </tr>
@@ -1707,6 +1750,7 @@
                                     <th><span>Time</span><div class="resize-handle"></div></th>
                                     <th><span>Type</span><div class="resize-handle"></div></th>
                                     <th><span>Person Name</span><div class="resize-handle"></div></th>
+                                    <th><span>Department</span><div class="resize-handle"></div></th>
                                     <th><span>Status</span><div class="resize-handle"></div></th>
                                 </tr>
                             </thead>
@@ -1825,6 +1869,12 @@
                                 data: null,
                                 render: function (data) {
                                     return (data.type === 'task' ? data.task.personName : data.event.personName) || 'N/A';
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data) {
+                                    return (data.type === 'task' ? data.task.department : data.event.department) || 'N/A';
                                 }
                             },
                             {
@@ -2174,6 +2224,9 @@
                 const endTime = getFlatpickrTime('taskEndTime');
                 const type = $('#taskType').val();
                 const newDate = $('#taskDate').val();
+                const departmentSelect = $('#task-department-select').val();
+                const departmentCustom = $('#task-department-custom').val().trim();
+                const department = departmentSelect === 'Custom' ? departmentCustom : departmentSelect;
                 const time = startTime || endTime ? { start: startTime, end: endTime } : null;
 
                 if (!title || !newDate) {
@@ -2195,6 +2248,7 @@
                     id: taskId,
                     title,
                     personName,
+                    department,
                     time,
                     type,
                     completed: false,
@@ -2281,9 +2335,13 @@
                     const eventId = $('#recurringId').val() || String(Date.now());
                     const isEditing = !!$('#recurringId').val();
                     const pattern = $('#recurrencePattern').val();
+                    const departmentSelect = $('#recurring-department-select').val();
+                    const departmentCustom = $('#recurring-department-custom').val().trim();
+                    const department = departmentSelect === 'Custom' ? departmentCustom : departmentSelect;
                     let eventData = {
                         personName: $('#recurringPersonName').val(),
                         title: $('#recurringTitle').val(),
+                        department,
                         time: { start: getFlatpickrTime('recurringStartTime'), end: getFlatpickrTime('recurringEndTime') },
                         type: $('#recurringType').val(),
                         startDate: $('#recurringStartDate').val(),
@@ -2294,7 +2352,7 @@
                         followUps: recurringEvents[eventId]?.followUps || []
                     };
 
-                    if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
+                    if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern ) {
                         return alert('Please fill all required fields');
                     }
                     // Validate time range
@@ -2450,6 +2508,8 @@
                         $('#recurringId').val(eventId);
                         $('#recurringPersonName').val(event.personName);
                         $('#recurringTitle').val(event.title);
+                        $('#recurring-department-select').val(departments.includes(event.department) ? event.department : 'Custom').trigger('change');
+                        $('#recurring-department-custom').val(departments.includes(event.department) ? '' : event.department);
                         setFlatpickrTime('recurringStartTime', event.time?.start || '');
                         setFlatpickrTime('recurringEndTime', event.time?.end || '');
                         $('#recurringType').val(event.type);
@@ -2479,6 +2539,8 @@
                         $('#taskDate').val(taskDate);
                         $('#personName').val(task.personName);
                         $('#taskTitle').val(task.title);
+                        $('#task-department-select').val(departments.includes(task.department) ? task.department : 'Custom').trigger('change');
+                        $('#task-department-custom').val(departments.includes(task.department) ? '' : task.department);
                         setFlatpickrTime('taskStartTime', task.time?.start || '');
                         setFlatpickrTime('taskEndTime', task.time?.end || '');
                         $('#taskType').val(task.type);
@@ -2637,6 +2699,8 @@
                 $('#originalTaskId').val(taskId);
                 $('#followTitle').val(originalTask.title || '');
                 $('#followPersonName').val(originalTask.personName || '');
+                $('#follow-department-select').val(departments.includes(originalTask.department) ? originalTask.department : 'Custom').trigger('change');
+                $('#follow-department-custom').val(departments.includes(originalTask.department) ? '' : originalTask.department);
                 $('#followType').val(originalTask.type || 'call');
                 $('#followDescription').val('');
                 $('#followUpDate').val(''); // Clear date for non-recurring tasks
@@ -2671,7 +2735,9 @@
                     const startTime = getFlatpickrTime('followStartTime');
                     const endTime = getFlatpickrTime('followEndTime');
                     const attachmentFile = $('#followAttachment')[0].files[0];
-
+                    const departmentSelect = $('#follow-department-select').val();
+                    const departmentCustom = $('#follow-department-custom').val().trim();
+                    const department = departmentSelect === 'Custom' ? departmentCustom : departmentSelect;
                     if (!validateTimeRange(startTime, endTime)) {
                         alert('End time must be after start time.');
                         hideLoading('#saveFollowUpBtn');
@@ -2710,6 +2776,7 @@
                             id: followUpId,
                             personName: $('#followPersonName').val(),
                             title: $('#followTitle').val(),
+                            department,
                             time: { start: startTime, end: endTime },
                             type: $('#followType').val(),
                             description: $('#followDescription').val(),
@@ -2768,6 +2835,7 @@
                             id: Date.now(),
                             personName: $('#followPersonName').val(),
                             title: $('#followTitle').val(),
+                            department,
                             time: startTime || endTime ? { start: startTime, end: endTime } : null,
                             type: $('#followType').val(),
                             description: $('#followDescription').val(),

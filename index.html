@@ -2744,6 +2744,41 @@
                         return;
                     }
 
+                    // Get original task's creation date
+                    let original;
+                    let creationDate;
+                    if (isRecurring) {
+                        const eventId = taskId.split('_')[0];
+                        original = recurringEvents[eventId];
+                        if (!original) {
+                            alert('Recurring event not found');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+                        const creationEntry = original.history?.find(entry => entry.action === 'Created');
+                        creationDate = creationEntry?.date || original.startDate;
+                    } else {
+                        original = findTask(taskId);
+                        if (!original) {
+                            alert('Original task not found');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+                        const creationEntry = original.task.history?.find(entry => entry.action === 'Created');
+                        creationDate = creationEntry?.date || original.date;
+                    }
+
+                    // Validate follow-up date
+                    if (taskDate && creationDate) {
+                        const followUpDateObj = new Date(taskDate);
+                        const creationDateObj = new Date(creationDate);
+                        if (followUpDateObj < creationDateObj) {
+                            alert('Follow-up date cannot be before the task creation date.');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+                    }
+
                     let attachmentData = null;
                     if (attachmentFile) {
                         $('#saveFollowUpBtn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');

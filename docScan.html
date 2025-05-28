@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image and Extract Copyable Text</title>
+    <!-- Include Tesseract.js from CDN -->
+    <script src="https://unpkg.com/tesseract.js@v5.1.0/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+            display: none; /* Hidden until an image is uploaded */
+        }
+        .copyable-text {
+            background-color: #fff;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: left;
+            white-space: pre-wrap;
+            user-select: text;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        #loading {
+            display: none;
+            margin: 10px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Image and Extract Copyable Text</h1>
+        
+        <!-- File input for uploading an image -->
+        <input type="file" id="imageUpload" accept="image/*" onchange="processImage(event)">
+        
+        <!-- Image display area -->
+        <img id="uploadedImage" alt="Uploaded image">
+        
+        <!-- Loading message -->
+        <div id="loading">Processing image, please wait...</div>
+        
+        <!-- Copyable extracted text -->
+        <h2>Extracted Text (Copyable)</h2>
+        <div class="copyable-text" id="copyableText">
+            Upload an image to extract text.
+        </div>
+        
+        <button onclick="copyText()">Copy Text to Clipboard</button>
+    </div>
+
+    <script>
+        // Function to display the uploaded image and extract text
+        async function processImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Display the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById("uploadedImage");
+                img.src = e.target.result;
+                img.style.display = "block"; // Show the image
+            };
+            reader.readAsDataURL(file);
+
+            // Show loading message
+            const loadingDiv = document.getElementById("loading");
+            loadingDiv.style.display = "block";
+
+            // Use Tesseract.js to extract text
+            try {
+                const { data: { text } } = await Tesseract.recognize(
+                    file,
+                    'eng',
+                    {
+                        logger: (m) => console.log(m) // Log progress
+                    }
+                );
+
+                // Display the extracted text
+                const copyableTextDiv = document.getElementById("copyableText");
+                copyableTextDiv.innerText = text || "No text extracted.";
+            } catch (error) {
+                console.error("Error extracting text:", error);
+                document.getElementById("copyableText").innerText = "Error extracting text. Please try another image.";
+            } finally {
+                // Hide loading message
+                loadingDiv.style.display = "none";
+            }
+        }
+
+        // Function to copy text to clipboard
+        function copyText() {
+            const text = document.getElementById("copyableText").innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Text copied to clipboard!");
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+            });
+        }
+    </script>
+</body>
+</html>

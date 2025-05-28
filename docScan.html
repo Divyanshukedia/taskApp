@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Image and Extract Copyable Text</title>
+    <title>Upload Image and Extract All Text</title>
     <!-- Include Tesseract.js from CDN -->
     <script src="https://unpkg.com/tesseract.js@v5.1.0/dist/tesseract.min.js"></script>
     <style>
@@ -57,7 +57,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Upload Image and Extract Copyable Text</h1>
+        <h1>Upload Image to Extract All Text</h1>
         
         <!-- File input for uploading an image -->
         <input type="file" id="imageUpload" accept="image/*" onchange="processImage(event)">
@@ -100,7 +100,7 @@
             try {
                 const { data: { text } } = await Tesseract.recognize(
                     file,
-                    'eng',
+                    'eng', // Language set to English
                     {
                         logger: (m) => console.log(m) // Log progress
                     }

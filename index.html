@@ -552,11 +552,13 @@
                             <label class="form-label">Title</label>
                             <input type="text" class="form-control" id="taskTitle" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Person Name</label>
-                            <input type="text" class="form-control" id="personName" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Person Name</label>
+                                <input type="text" class="form-control" id="personName" required>
+                            </div>
+                            <div class="col-md-6" id="task-department-container"></div> <!-- Placeholder for department -->
                         </div>
-                        <div class="mb-3" id="task-department-container"></div> <!-- Placeholder for department -->
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
@@ -603,11 +605,13 @@
                             <label class="form-label">Title</label>
                             <input type="text" class="form-control" id="recurringTitle" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Person Name</label>
-                            <input type="text" class="form-control" id="recurringPersonName" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Person Name</label>
+                                <input type="text" class="form-control" id="recurringPersonName" required>
+                            </div>
+                            <div class="col-md-6" id="recurring-department-container"></div> <!-- Placeholder for department -->
                         </div>
-                        <div class="mb-3" id="recurring-department-container"></div> <!-- Placeholder for department -->
                         <div class="row mb-3">
                             <div class="col">
                                 <label class="form-label">Start Time</label>
@@ -750,13 +754,15 @@
                     <label class="form-label">Person Name</label>
                     <textarea class="form-control" id="followPersonName" rows="2" required></textarea>
                 </div>
-                <div class="mb-3" id="follow-department-container"></div> <!-- Placeholder for department -->
-                <div class="col">
-                    <label class="form-label">Type</label>
-                    <select class="form-select" id="followType" required>
-                        <option value="call">Call</option>
-                        <option value="meeting">Meeting</option>
-                    </select>
+                <div class="row mb-3">
+                    <div class="col" id="follow-department-container"></div> <!-- Placeholder for department -->
+                    <div class="col">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" id="followType" required>
+                            <option value="call">Call</option>
+                            <option value="meeting">Meeting</option>
+                        </select>
+                        </div>
                     </div>
                 </div>
                 <div class="row mb-3">

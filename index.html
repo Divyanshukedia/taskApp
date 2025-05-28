@@ -2750,9 +2750,10 @@
                         return;
                     }
 
-                    // Get original task's creation date
+                    // Get original task's creation date and date
                     let original;
                     let creationDate;
+                    let originalDate;
                     if (isRecurring) {
                         const eventId = taskId.split('_')[0];
                         original = recurringEvents[eventId];
@@ -2761,8 +2762,9 @@
                             hideLoading('#saveFollowUpBtn');
                             return;
                         }
-                        const creationEntry = original.history?.find(entry => entry.action === 'Created');
+                        const creationEntry = original.history?.find(entry => entry.action === 'Event created');
                         creationDate = creationEntry?.date || original.startDate;
+                        originalDate = original.startDate;
                     } else {
                         original = findTask(taskId);
                         if (!original) {
@@ -2772,14 +2774,35 @@
                         }
                         const creationEntry = original.task.history?.find(entry => entry.action === 'Created');
                         creationDate = creationEntry?.date || original.date;
+                        originalDate = original.date;
                     }
 
                     // Validate follow-up date
                     if (taskDate && creationDate) {
                         const followUpDateObj = new Date(taskDate);
                         const creationDateObj = new Date(creationDate);
+                        const originalDateObj = new Date(originalDate);
+
+                        // Check if follow-up date is the same as the original task date
+                        if (isSameDay(followUpDateObj, originalDateObj)) {
+                            alert('Follow-up date cannot be the same as the original task date.');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+
+                        // Check if follow-up date is before the task creation date
                         if (followUpDateObj < creationDateObj) {
                             alert('Follow-up date cannot be before the task creation date.');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+
+                        // Check for existing follow-up tasks on the follow-up date
+                        const followUpDateStr = formatDate(followUpDateObj);
+                        const tasksOnFollowUpDate = tasks[followUpDateStr] || [];
+                        const hasExistingFollowUp = tasksOnFollowUpDate.some(t => t.followUpFrom);
+                        if (hasExistingFollowUp) {
+                            alert('A follow-up task already exists on the selected date. Please choose a different date.');
                             hideLoading('#saveFollowUpBtn');
                             return;
                         }
@@ -2892,16 +2915,16 @@
                             return;
                         }
 
-                        const original = findTask(taskId);
-                        if (!original) {
+                        const originalTask = findTask(taskId);
+                        if (!originalTask) {
                             alert('Original task not found');
                             hideLoading('#saveFollowUpBtn');
                             return;
                         }
 
                         // Safely handle time for history logging
-                        const originalTimeStr = original.task.time 
-                            ? `${original.task.time.start || ''} - ${original.task.time.end || ''}`
+                        const originalTimeStr = originalTask.task.time 
+                            ? `${originalTask.task.time.start || ''} - ${originalTask.task.time.end || ''}`
                             : 'No time specified';
                         const followUpTimeStr = followUpData.time 
                             ? `${followUpData.time.start || ''} - ${followUpData.time.end || ''}`
@@ -2911,12 +2934,12 @@
                             date: new Date().toISOString(),
                             action: 'Follow-up created',
                             changes: {
-                                personName: { old: original.task.personName, new: followUpData.personName },
-                                title: { old: original.task.title, new: followUpData.title },
-                                type: { old: original.task.type, new: followUpData.type },
+                                personName: { old: originalTask.task.personName, new: followUpData.personName },
+                                title: { old: originalTask.task.title, new: followUpData.title },
+                                type: { old: originalTask.task.type, new: followUpData.type },
                                 time: { old: originalTimeStr, new: followUpTimeStr },
-                                description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
-                                completed: { old: original.task.completed, new: false },
+                                description: { old: originalTask.task.description || 'None', new: followUpData.description || 'None' },
+                                completed: { old: originalTask.task.completed, new: false },
                                 ...(attachmentData && { attachment: { new: attachmentData.name } })
                             }
                         });
@@ -2924,8 +2947,8 @@
                         tasks[taskDate] = tasks[taskDate] || [];
                         tasks[taskDate].push(followUpData);
 
-                        original.task.history = original.task.history || [];
-                        original.task.history.unshift({
+                        originalTask.task.history = originalTask.task.history || [];
+                        originalTask.task.history.unshift({
                             date: new Date().toISOString(),
                             action: 'Follow-up created',
                             changes: {
@@ -2937,16 +2960,16 @@
                                 ...(attachmentData && { attachment: { new: attachmentData.name } })
                             }
                         });
-                        original.task.followUps = original.task.followUps || [];
-                        original.task.followUps.push({ id: followUpData.id, date: taskDate });
+                        originalTask.task.followUps = originalTask.task.followUps || [];
+                        originalTask.task.followUps.push({ id: followUpData.id, date: taskDate });
 
                         await Promise.all([
                             saveTasks(taskDate, tasks[taskDate]),
-                            saveTasks(original.date, tasks[original.date])
+                            saveTasks(originalTask.date, tasks[originalTask.date])
                         ]);
 
                         renderCalendar();
-                        showTaskDetails(original.task, original.date);
+                        showTaskDetails(originalTask.task, originalTask.date);
                     }
 
                     followUpModal.hide();

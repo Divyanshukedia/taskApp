@@ -284,9 +284,34 @@
         .dataTables_wrapper .dataTables_length {
             margin-bottom: 1rem;
         }
+        #loading-overlay {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        #loading-overlay.d-none {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading-overlay:not(.d-none) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .spinner-border {
+            border-width: 0.4em;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="background: rgba(0, 0, 0, 0.5); z-index: 9999;">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
     <!-- Login Section -->
     <div id="login-section" class="container">
         <div class="row justify-content-center">
@@ -857,7 +882,21 @@
             const completionDescriptionModal = new bootstrap.Modal('#completionDescriptionModal');
             let flatpickrInstances = {};
 
+            // Show loading overlay and disable buttons
+            const showLoading = (button = null) => {
+                $('#loading-overlay').removeClass('d-none');
+                if (button) {
+                    $(button).prop('disabled', true).addClass('disabled');
+                }
+            };
 
+            // Hide loading overlay and re-enable buttons
+            const hideLoading = (button = null) => {
+                $('#loading-overlay').addClass('d-none');
+                if (button) {
+                    $(button).prop('disabled', false).removeClass('disabled');
+                }
+            };
             // New function to validate time range
             const validateTimeRange = (startTime, endTime) => {
                 if (!startTime || !endTime) return true; // No validation if either time is missing (all-day task)
@@ -2126,6 +2165,8 @@
             };
 
             $('#saveTaskBtn').click(async () => {
+                showLoading('#saveTaskBtn');
+                try {
                 const taskId = $('#taskId').val() || crypto.randomUUID();
                 const title = $('#taskTitle').val().trim();
                 const personName = $('#personName').val().trim();
@@ -2193,6 +2234,12 @@
                 setFlatpickrTime('taskEndTime', '');
                 renderCalendar();
                 if ($('#tasks-page').hasClass('active')) renderAllTasks();
+                } catch (error) {
+                    console.error('Error saving task:', error);
+                    alert('Failed to save task');
+                } finally {
+                    hideLoading('#saveTaskBtn');
+                }
             });
 
             $('#reset-password-btn').click(async () => {
@@ -2229,87 +2276,95 @@
             });
 
             $('#saveRecurringBtn').click(async () => {
-                const eventId = $('#recurringId').val() || String(Date.now());
-                const isEditing = !!$('#recurringId').val();
-                const pattern = $('#recurrencePattern').val();
-                let eventData = {
-                    personName: $('#recurringPersonName').val(),
-                    title: $('#recurringTitle').val(),
-                    time: { start: getFlatpickrTime('recurringStartTime'), end: getFlatpickrTime('recurringEndTime') },
-                    type: $('#recurringType').val(),
-                    startDate: $('#recurringStartDate').val(),
-                    endDate: $('#recurringEndDate').val() || null,
-                    pattern,
-                    completed: false,
-                    history: recurringEvents[eventId]?.history || [],
-                    followUps: recurringEvents[eventId]?.followUps || []
-                };
+                showLoading('#saveRecurringBtn');
+                try {
+                    const eventId = $('#recurringId').val() || String(Date.now());
+                    const isEditing = !!$('#recurringId').val();
+                    const pattern = $('#recurrencePattern').val();
+                    let eventData = {
+                        personName: $('#recurringPersonName').val(),
+                        title: $('#recurringTitle').val(),
+                        time: { start: getFlatpickrTime('recurringStartTime'), end: getFlatpickrTime('recurringEndTime') },
+                        type: $('#recurringType').val(),
+                        startDate: $('#recurringStartDate').val(),
+                        endDate: $('#recurringEndDate').val() || null,
+                        pattern,
+                        completed: false,
+                        history: recurringEvents[eventId]?.history || [],
+                        followUps: recurringEvents[eventId]?.followUps || []
+                    };
 
-                if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
-                    return alert('Please fill all required fields');
+                    if (!eventData.title || !eventData.personName || !eventData.startDate || !pattern) {
+                        return alert('Please fill all required fields');
+                    }
+                    // Validate time range
+                    if (!validateTimeRange(eventData.time.start, eventData.time.end)) {
+                        alert('End time must be after start time.');
+                        return;
+                    }
+
+                    if (pattern === 'weekly') {
+                        eventData.days = [];
+                        $('#weekly-options input:checked').each(function() {
+                            eventData.days.push(parseInt($(this).val()));
+                        });
+                        if (!eventData.days.length) return alert('Please select at least one day');
+                    } else if (pattern === 'monthly') {
+                        eventData.day = parseInt($('#monthlyDate').val());
+                        if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
+                    } else if (pattern === 'monthly-day') {
+                        eventData.week = $('#monthlyWeek').val();
+                        eventData.day = parseInt($('#monthlyDay').val());
+                    }
+
+                    const checkEndDate = new Date();
+                    checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
+                    const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
+                    for (const date of datesToCheck) {
+                        const dateStr = formatDate(date);
+                        // if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
+                        //     alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
+                        //     return;
+                        // }
+                    }
+
+                    const oldEvent = recurringEvents[eventId];
+                    const changes = oldEvent ? {
+                        ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
+                        ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
+                        ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
+                        ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
+                            time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
+                        }),
+                        ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
+                        ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
+                        ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
+                    } : {
+                        personName: { new: eventData.personName },
+                        title: { new: eventData.title },
+                        type: { new: eventData.type },
+                        time: { new: `${eventData.time.start} - ${eventData.time.end}` },
+                        startDate: { new: eventData.startDate },
+                        endDate: { new: eventData.endDate || 'None' },
+                        pattern: { new: eventData.pattern }
+                    };
+
+                    if (Object.keys(changes).length) {
+                        eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
+                    }
+
+                    await saveRecurringEvent(eventId, eventData);
+                    recurringModal.hide();
+                    $('#recurringForm')[0].reset();
+                    setFlatpickrTime('recurringStartTime', '');
+                    setFlatpickrTime('recurringEndTime', '');
+                    renderCalendar();
+                } catch (error) {
+                    console.error('Error saving recurring event:', error);
+                    alert('Failed to save recurring event');
+                } finally {
+                    hideLoading('#saveRecurringBtn');
                 }
-                // Validate time range
-                if (!validateTimeRange(eventData.time.start, eventData.time.end)) {
-                    alert('End time must be after start time.');
-                    return;
-                }
-
-                if (pattern === 'weekly') {
-                    eventData.days = [];
-                    $('#weekly-options input:checked').each(function() {
-                        eventData.days.push(parseInt($(this).val()));
-                    });
-                    if (!eventData.days.length) return alert('Please select at least one day');
-                } else if (pattern === 'monthly') {
-                    eventData.day = parseInt($('#monthlyDate').val());
-                    if (!eventData.day || eventData.day < 1 || eventData.day > 31) return alert('Please enter a valid day');
-                } else if (pattern === 'monthly-day') {
-                    eventData.week = $('#monthlyWeek').val();
-                    eventData.day = parseInt($('#monthlyDay').val());
-                }
-
-                const checkEndDate = new Date();
-                checkEndDate.setFullYear(checkEndDate.getFullYear() + 1);
-                const datesToCheck = getRecurringDates(eventData, new Date(eventData.startDate), checkEndDate);
-                for (const date of datesToCheck) {
-                    const dateStr = formatDate(date);
-                    // if (hasConflict(dateStr, eventData.time.start, eventData.time.end, null, isEditing ? eventId : null)) {
-                    //     alert(`Conflict detected on ${date.toLocaleDateString()}. Cannot save the recurring event.`);
-                    //     return;
-                    // }
-                }
-
-                const oldEvent = recurringEvents[eventId];
-                const changes = oldEvent ? {
-                    ...(oldEvent.personName !== eventData.personName && { personName: { old: oldEvent.personName, new: eventData.personName } }),
-                    ...(oldEvent.title !== eventData.title && { title: { old: oldEvent.title, new: eventData.title } }),
-                    ...(oldEvent.type !== eventData.type && { type: { old: oldEvent.type, new: eventData.type } }),
-                    ...((oldEvent.time.start !== eventData.time.start || oldEvent.time.end !== eventData.time.end) && {
-                        time: { old: `${oldEvent.time.start || ''} - ${oldEvent.time.end || ''}`, new: `${eventData.time.start} - ${eventData.time.end}` }
-                    }),
-                    ...(oldEvent.startDate !== eventData.startDate && { startDate: { old: oldEvent.startDate, new: eventData.startDate } }),
-                    ...(oldEvent.endDate !== eventData.endDate && { endDate: { old: oldEvent.endDate || 'None', new: eventData.endDate || 'None' } }),
-                    ...(oldEvent.pattern !== eventData.pattern && { pattern: { old: oldEvent.pattern, new: eventData.pattern } })
-                } : {
-                    personName: { new: eventData.personName },
-                    title: { new: eventData.title },
-                    type: { new: eventData.type },
-                    time: { new: `${eventData.time.start} - ${eventData.time.end}` },
-                    startDate: { new: eventData.startDate },
-                    endDate: { new: eventData.endDate || 'None' },
-                    pattern: { new: eventData.pattern }
-                };
-
-                if (Object.keys(changes).length) {
-                    eventData.history.unshift({ date: new Date().toISOString(), action: oldEvent ? 'Event updated' : 'Event created', changes });
-                }
-
-                await saveRecurringEvent(eventId, eventData);
-                recurringModal.hide();
-                $('#recurringForm')[0].reset();
-                setFlatpickrTime('recurringStartTime', '');
-                setFlatpickrTime('recurringEndTime', '');
-                renderCalendar();
             });
 
             $(document).on('click', '.edit-recurring-btn', function() {
@@ -2341,8 +2396,16 @@
             $(document).on('click', '.delete-recurring-btn', async function() {
                 const eventId = $(this).closest('.card').data('event-id');
                 if (confirm('Delete this recurring event?')) {
-                    await deleteRecurringEvent(eventId);
-                    renderCalendar();
+                    showLoading(this);
+                    try {
+                        await deleteRecurringEvent(eventId);
+                        renderCalendar();
+                    } catch (error) {
+                        console.error('Error deleting recurring event:', error);
+                        alert('Failed to delete recurring event');
+                    } finally {
+                        hideLoading(this);
+                    }
                 }
             });
 
@@ -2441,18 +2504,26 @@
                     );
 
                     if (choice) {
-                        // Delete only this instance by adding to exceptions
-                        event.exceptions = event.exceptions || [];
-                        if (!event.exceptions.includes(instanceDateStr)) {
-                            event.exceptions.push(instanceDateStr);
-                            event.history = event.history || [];
-                            event.history.unshift({
-                                date: new Date().toISOString(),
-                                action: 'Instance deleted',
-                                instanceDate: instanceDateStr,
-                                changes: { date: instanceDateStr }
-                            });
-                            await saveRecurringEvent(eventId, event);
+                        showLoading('#delete-task-btn');
+                        try {
+                            // Delete only this instance by adding to exceptions
+                            event.exceptions = event.exceptions || [];
+                            if (!event.exceptions.includes(instanceDateStr)) {
+                                event.exceptions.push(instanceDateStr);
+                                event.history = event.history || [];
+                                event.history.unshift({
+                                    date: new Date().toISOString(),
+                                    action: 'Instance deleted',
+                                    instanceDate: instanceDateStr,
+                                    changes: { date: instanceDateStr }
+                                });
+                                await saveRecurringEvent(eventId, event);
+                            }
+                        } catch (error) {
+                            console.error('Error deleting recurring event instance:', error);
+                            alert('Failed to delete recurring event instance');
+                        } finally {
+                            hideLoading('#delete-task-btn');
                         }
                     } else {
                         return;
@@ -2489,55 +2560,64 @@
                     'Mark Task as Completed');
                 
                 $('#saveCompletionDescriptionBtn').off('click').on('click', async () => {
-                    const description = $('#completionDescription').val().trim();
-                    const newCompletedStatus = !isCurrentlyCompleted;
-                    const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
+                    showLoading('#saveCompletionDescriptionBtn');
+                    try {
+                        const description = $('#completionDescription').val().trim();
+                        const newCompletedStatus = !isCurrentlyCompleted;
+                        const action = newCompletedStatus ? 'Marked as completed' : 'Marked as incomplete';
 
-                    if (isRecurring) {
-                        const eventId = taskId.split('_')[0];
-                        const event = recurringEvents[eventId];
-                        if (event) {
-                            event.completed = newCompletedStatus;
-                            event.history = event.history || [];
-                            event.history.unshift({
-                                date: new Date().toISOString(),
-                                action,
-                                changes: { 
-                                    completed: { old: !newCompletedStatus, new: newCompletedStatus },
-                                    description: description || 'No description provided'
-                                }
-                            });
-                            await saveRecurringEvent(eventId, event);
-                            renderCalendar();
-                            showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
+                        if (isRecurring) {
+                            const eventId = taskId.split('_')[0];
+                            const event = recurringEvents[eventId];
+                            if (event) {
+                                event.completed = newCompletedStatus;
+                                event.history = event.history || [];
+                                event.history.unshift({
+                                    date: new Date().toISOString(),
+                                    action,
+                                    changes: { 
+                                        completed: { old: !newCompletedStatus, new: newCompletedStatus },
+                                        description: description || 'No description provided'
+                                    }
+                                });
+                                await saveRecurringEvent(eventId, event);
+                                renderCalendar();
+                                showTaskDetails({ ...event, id: taskId, isRecurring: true }, taskDate);
+                            }
+                        } else {
+                            if (!tasks[taskDate]) {
+                                console.error(`No tasks found for date: ${taskDate}`);
+                                return;
+                            }
+                            const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
+                            if (task) {
+                                task.completed = newCompletedStatus;
+                                task.history = task.history || [];
+                                task.history.unshift({
+                                    date: new Date().toISOString(),
+                                    action,
+                                    changes: { 
+                                        completed: { old: !newCompletedStatus, new: newCompletedStatus },
+                                        description: description || 'No description provided'
+                                    }
+                                });
+                                await saveTasks(taskDate, tasks[taskDate]);
+                                renderCalendar();
+                                showTaskDetails(task, taskDate);
+                            }
                         }
-                    } else {
-                        if (!tasks[taskDate]) {
-                            console.error(`No tasks found for date: ${taskDate}`);
-                            return;
-                        }
-                        const task = tasks[taskDate].find(t => String(t.id) === String(taskId));
-                        if (task) {
-                            task.completed = newCompletedStatus;
-                            task.history = task.history || [];
-                            task.history.unshift({
-                                date: new Date().toISOString(),
-                                action,
-                                changes: { 
-                                    completed: { old: !newCompletedStatus, new: newCompletedStatus },
-                                    description: description || 'No description provided'
-                                }
-                            });
-                            await saveTasks(taskDate, tasks[taskDate]);
-                            renderCalendar();
-                            showTaskDetails(task, taskDate);
-                        }
+                        completionDescriptionModal.hide();
+                        editOptionsModal.hide();
+                    } catch (error) {
+                        console.error('Error updating task status:', error);
+                        alert('Failed to update task status');
+                    } finally {
+                        hideLoading('#saveCompletionDescriptionBtn');
                     }
-                    completionDescriptionModal.hide();
-                    editOptionsModal.hide();
                 });
 
                 completionDescriptionModal.show();
+
             });
 
             $('#openFollowUpModalBtn').click(() => {
@@ -2583,169 +2663,195 @@
                 editOptionsModal.hide();
             });
             $('#saveFollowUpBtn').click(async () => {
-                const taskId = $('#originalTaskId').val();
-                const isRecurring = $('#editOptionsModal').data('is-recurring');
-                const taskDate = $('#followUpDate').val();
-                const startTime = getFlatpickrTime('followStartTime');
-                const endTime = getFlatpickrTime('followEndTime');
-                const attachmentFile = $('#followAttachment')[0].files[0];
+                showLoading('#saveFollowUpBtn');
+                try {
+                    const taskId = $('#originalTaskId').val();
+                    const isRecurring = $('#editOptionsModal').data('is-recurring');
+                    const taskDate = $('#followUpDate').val();
+                    const startTime = getFlatpickrTime('followStartTime');
+                    const endTime = getFlatpickrTime('followEndTime');
+                    const attachmentFile = $('#followAttachment')[0].files[0];
 
-                if (!validateTimeRange(startTime, endTime)) {
-                    alert('End time must be after start time.');
-                    return;
-                }
-
-                let attachmentData = null;
-                if (attachmentFile) {
-                    $('#saveFollowUpBtn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
-                    try {
-                        const attachmentPath = `task-attachments/${currentUser.uid}/${Date.now()}_${attachmentFile.name}`;
-                        const downloadURL = await uploadFile(attachmentFile, attachmentPath);
-                        attachmentData = {
-                            url: downloadURL,
-                            name: attachmentFile.name,
-                            type: attachmentFile.type,
-                            size: attachmentFile.size
-                        };
-                    } catch (error) {
-                        alert('Failed to upload attachment');
-                        $('#saveFollowUpBtn').html('Save Follow-up');
+                    if (!validateTimeRange(startTime, endTime)) {
+                        alert('End time must be after start time.');
+                        hideLoading('#saveFollowUpBtn');
                         return;
                     }
-                }
 
-                if (isRecurring) {
-                    const eventId = taskId.split('_')[0];
-                    const event = recurringEvents[eventId];
-                    if (!event) return alert('Recurring event not found');
-
-                    const followUpId = Date.now();
-                    const followUpData = {
-                        id: followUpId,
-                        personName: $('#followPersonName').val(),
-                        title: $('#followTitle').val(),
-                        time: { start: startTime, end: endTime },
-                        type: $('#followType').val(),
-                        description: $('#followDescription').val(),
-                        date: new Date().toISOString().split('T')[0],
-                        attachment: attachmentData
-                    };
-
-                    if (!followUpData.title || !followUpData.personName) return alert('Please fill all required fields');
-
-                    const checkDate = event.startDate;
-                    // if (hasConflict(checkDate, followUpData.time.start, followUpData.time.end, null, eventId)) {
-                    //     alert('This follow-up conflicts with an existing task on the event date.');
-                    //     return;
-                    // }
-
-                    const updatedData = { ...event };
-                    updatedData.history = updatedData.history || [];
-                    updatedData.followUps = updatedData.followUps || [];
-
-                    const changes = {
-                        followUpId: { new: followUpId },
-                        followUpTitle: { new: followUpData.title },
-                        followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                        followUpPersonName: { new: followUpData.personName },
-                        followUpType: { new: followUpData.type },
-                        followUpDescription: { new: followUpData.description || 'None' },
-                        ...(attachmentData && { followUpAttachment: { new: attachmentData.name } })
-                    };
-
-                    updatedData.history.unshift({
-                        date: new Date().toISOString(),
-                        action: 'Follow-up created',
-                        changes
-                    });
-
-                    updatedData.followUps.push({
-                        id: followUpId,
-                        date: followUpData.date,
-                        title: followUpData.title,
-                        personName: followUpData.personName,
-                        time: followUpData.time,
-                        type: followUpData.type,
-                        description: followUpData.description,
-                        attachment: attachmentData
-                    });
-
-                    await saveRecurringEvent(eventId, updatedData);
-                    followUpModal.hide();
-                    renderCalendar();
-                    showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
-                } else {
-                    if (!taskDate) return alert('Please select a follow-up date');
-                    // if (hasConflict(taskDate, startTime, endTime)) {
-                    //     alert('This follow-up task conflicts with an existing task on this date.');
-                    //     return;
-                    // }
-                    const followUpData = {
-                        id: Date.now(),
-                        personName: $('#followPersonName').val(),
-                        title: $('#followTitle').val(),
-                        time: { start: startTime, end: endTime },
-                        type: $('#followType').val(),
-                        description: $('#followDescription').val(),
-                        completed: false,
-                        followUpFrom: taskId,
-                        history: [],
-                        attachment: attachmentData
-                    };
-
-                    if (!followUpData.title || !followUpData.personName || !taskDate) return alert('Please fill all required fields');
-
-                    const original = findTask(taskId);
-                    if (!original) return;
-
-                    followUpData.history.push({
-                        date: new Date().toISOString(),
-                        action: 'Follow-up created',
-                        changes: {
-                            personName: { old: original.task.personName, new: followUpData.personName },
-                            title: { old: original.task.title, new: followUpData.title },
-                            type: { old: original.task.type, new: followUpData.type },
-                            time: { old: `${original.task.time.start || ''} - ${original.task.time.end || ''}`, new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                            description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
-                            completed: { old: original.task.completed, new: false },
-                            ...(attachmentData && { attachment: { new: attachmentData.name } })
+                    let attachmentData = null;
+                    if (attachmentFile) {
+                        $('#saveFollowUpBtn').html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+                        try {
+                            const attachmentPath = `task-attachments/${currentUser.uid}/${Date.now()}_${attachmentFile.name}`;
+                            const downloadURL = await uploadFile(attachmentFile, attachmentPath);
+                            attachmentData = {
+                                url: downloadURL,
+                                name: attachmentFile.name,
+                                type: attachmentFile.type,
+                                size: attachmentFile.size
+                            };
+                        } catch (error) {
+                            alert('Failed to upload attachment');
+                            throw error;
                         }
-                    });
+                    }
 
-                    tasks[taskDate] = tasks[taskDate] || [];
-                    tasks[taskDate].push(followUpData);
+                    if (isRecurring) {
+                        const eventId = taskId.split('_')[0];
+                        const event = recurringEvents[eventId];
+                        if (!event) {
+                            alert('Recurring event not found');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
 
-                    original.task.history = original.task.history || [];
-                    original.task.history.unshift({
-                        date: new Date().toISOString(),
-                        action: 'Follow-up created',
-                        changes: {
-                            followUpId: { new: followUpData.id },
+                        const followUpId = Date.now();
+                        const followUpData = {
+                            id: followUpId,
+                            personName: $('#followPersonName').val(),
+                            title: $('#followTitle').val(),
+                            time: { start: startTime, end: endTime },
+                            type: $('#followType').val(),
+                            description: $('#followDescription').val(),
+                            date: new Date().toISOString().split('T')[0],
+                            attachment: attachmentData
+                        };
+
+                        if (!followUpData.title || !followUpData.personName) {
+                            alert('Please fill all required fields');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+
+                        const updatedData = { ...event };
+                        updatedData.history = updatedData.history || [];
+                        updatedData.followUps = updatedData.followUps || [];
+
+                        const changes = {
+                            followUpId: { new: followUpId },
                             followUpTitle: { new: followUpData.title },
-                            followUpDate: { new: taskDate },
-                            followUpTime: { new: `${followUpData.time.start} - ${followUpData.time.end}` },
-                            description: { new: followUpData.description || 'None' },
-                            ...(attachmentData && { attachment: { new: attachmentData.name } })
+                            followUpTime: { new: `${followUpData.time.start || ''} - ${followUpData.time.end || ''}` },
+                            followUpPersonName: { new: followUpData.personName },
+                            followUpType: { new: followUpData.type },
+                            followUpDescription: { new: followUpData.description || 'None' },
+                            ...(attachmentData && { followUpAttachment: { new: attachmentData.name } })
+                        };
+
+                        updatedData.history.unshift({
+                            date: new Date().toISOString(),
+                            action: 'Follow-up created',
+                            changes
+                        });
+
+                        updatedData.followUps.push({
+                            id: followUpId,
+                            date: followUpData.date,
+                            title: followUpData.title,
+                            personName: followUpData.personName,
+                            time: followUpData.time,
+                            type: followUpData.type,
+                            description: followUpData.description,
+                            attachment: attachmentData
+                        });
+
+                        await saveRecurringEvent(eventId, updatedData);
+                        followUpModal.hide();
+                        renderCalendar();
+                        showTaskDetails({ ...updatedData, id: taskId, isRecurring: true }, new Date(event.startDate));
+                    } else {
+                        if (!taskDate) {
+                            alert('Please select a follow-up date');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
                         }
-                    });
-                    original.task.followUps = original.task.followUps || [];
-                    original.task.followUps.push({ id: followUpData.id, date: taskDate });
+                        const followUpData = {
+                            id: Date.now(),
+                            personName: $('#followPersonName').val(),
+                            title: $('#followTitle').val(),
+                            time: startTime || endTime ? { start: startTime, end: endTime } : null,
+                            type: $('#followType').val(),
+                            description: $('#followDescription').val(),
+                            completed: false,
+                            followUpFrom: taskId,
+                            history: [],
+                            attachment: attachmentData
+                        };
 
-                    await Promise.all([
-                        saveTasks(taskDate, tasks[taskDate]),
-                        saveTasks(original.date, tasks[original.date])
-                    ]);
+                        if (!followUpData.title || !followUpData.personName || !taskDate) {
+                            alert('Please fill all required fields');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
 
-                    renderCalendar();
-                    showTaskDetails(original.task, original.date);
+                        const original = findTask(taskId);
+                        if (!original) {
+                            alert('Original task not found');
+                            hideLoading('#saveFollowUpBtn');
+                            return;
+                        }
+
+                        // Safely handle time for history logging
+                        const originalTimeStr = original.task.time 
+                            ? `${original.task.time.start || ''} - ${original.task.time.end || ''}`
+                            : 'No time specified';
+                        const followUpTimeStr = followUpData.time 
+                            ? `${followUpData.time.start || ''} - ${followUpData.time.end || ''}`
+                            : 'No time specified';
+
+                        followUpData.history.push({
+                            date: new Date().toISOString(),
+                            action: 'Follow-up created',
+                            changes: {
+                                personName: { old: original.task.personName, new: followUpData.personName },
+                                title: { old: original.task.title, new: followUpData.title },
+                                type: { old: original.task.type, new: followUpData.type },
+                                time: { old: originalTimeStr, new: followUpTimeStr },
+                                description: { old: original.task.description || 'None', new: followUpData.description || 'None' },
+                                completed: { old: original.task.completed, new: false },
+                                ...(attachmentData && { attachment: { new: attachmentData.name } })
+                            }
+                        });
+
+                        tasks[taskDate] = tasks[taskDate] || [];
+                        tasks[taskDate].push(followUpData);
+
+                        original.task.history = original.task.history || [];
+                        original.task.history.unshift({
+                            date: new Date().toISOString(),
+                            action: 'Follow-up created',
+                            changes: {
+                                followUpId: { new: followUpData.id },
+                                followUpTitle: { new: followUpData.title },
+                                followUpDate: { new: taskDate },
+                                followUpTime: { new: followUpTimeStr },
+                                description: { new: followUpData.description || 'None' },
+                                ...(attachmentData && { attachment: { new: attachmentData.name } })
+                            }
+                        });
+                        original.task.followUps = original.task.followUps || [];
+                        original.task.followUps.push({ id: followUpData.id, date: taskDate });
+
+                        await Promise.all([
+                            saveTasks(taskDate, tasks[taskDate]),
+                            saveTasks(original.date, tasks[original.date])
+                        ]);
+
+                        renderCalendar();
+                        showTaskDetails(original.task, original.date);
+                    }
+
+                    followUpModal.hide();
+                    $('#followUpForm')[0].reset();
+                    $('#followAttachment').val('');
+                    setFlatpickrTime('followStartTime', '');
+                    setFlatpickrTime('followEndTime', '');
+                    $('#saveFollowUpBtn').html('Save Follow-up');
+                } catch (error) {
+                    console.error('Error saving follow-up:', error);
+                    alert('Failed to save follow-up');
+                } finally {
+                    hideLoading('#saveFollowUpBtn');
                 }
-
-                followUpModal.hide();
-                $('#followUpForm')[0].reset();
-                $('#followAttachment').val('');
-                setFlatpickrTime('followStartTime', '');
-                setFlatpickrTime('followEndTime', '');
-                $('#saveFollowUpBtn').html('Save Follow-up');
             });
 
             // Profile Handlers

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Create Option by Selecting Fields</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 700px;
+    margin: auto;
+  }
+  .input-container {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px 16px;
+  }
+  .input-field {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  .add-option-container {
+    margin-bottom: 30px;
+  }
+  .add-option-container input[type="text"] {
+    padding: 6px;
+    margin-right: 10px;
+    width: 200px;
+  }
+  .add-option-container button {
+    padding: 7px 14px;
+  }
+  .fields-checkboxes label {
+    display: inline-block;
+    margin-right: 15px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Create new option by selecting fields</h2>
+<br>
+<div class="add-option-container">
+  <input type="text" id="optionName" placeholder="Client Name" />
+  <br> <br>
+  <div class="fields-checkboxes">
+    <label><input type="checkbox" value="Field 1" /> Field 1</label>
+    <label><input type="checkbox" value="Field 2" /> Field 2</label>
+    <label><input type="checkbox" value="Field 3" /> Field 3</label>
+    <label><input type="checkbox" value="Field 4" /> Field 4</label>
+    <label><input type="checkbox" value="Field 5" /> Field 5</label>
+  </div>
+  <br>
+  <button id="addOptionBtn">Add Option</button>
+</div>
+<br>
+<h1>--------------------------------------------</h1><br>
+<h2>Select an option to see input fields</h2>
+<select id="optionsDropdown">
+  <option value="">-- Select an option --</option>
+</select>
+
+<div id="inputFields" class="input-container"></div>
+
+<script>
+  const inputFieldsDiv = document.getElementById('inputFields');
+  const dropdown = document.getElementById('optionsDropdown');
+  const addOptionBtn = document.getElementById('addOptionBtn');
+  const optionNameInput = document.getElementById('optionName');
+  const checkboxes = document.querySelectorAll('.fields-checkboxes input[type="checkbox"]');
+
+  // Store config: key = optionName, value = array of field names
+  const fieldsConfig = {};
+
+  // Create input field element with label
+  function createInputField(name) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = name;
+    input.className = 'input-field';
+    return input;
+  }
+
+  // Show fields on dropdown change
+  dropdown.addEventListener('change', () => {
+    inputFieldsDiv.innerHTML = '';
+
+    const selectedOption = dropdown.value;
+    if (!selectedOption || !fieldsConfig[selectedOption]) return;
+
+    const fields = fieldsConfig[selectedOption];
+    fields.forEach(fieldName => {
+      inputFieldsDiv.appendChild(createInputField(fieldName));
+    });
+  });
+
+  // Add new option handler
+  addOptionBtn.addEventListener('click', () => {
+    const name = optionNameInput.value.trim();
+
+    if (!name) {
+      alert('Please enter a valid option name.');
+      return;
+    }
+
+    const selectedFields = Array.from(checkboxes)
+      .filter(chk => chk.checked)
+      .map(chk => chk.value);
+
+    if (selectedFields.length === 0) {
+      alert('Please select at least one field.');
+      return;
+    }
+
+    // Unique key for option
+    const key = name.toLowerCase().replace(/\s+/g, '_');
+
+    if (fieldsConfig[key]) {
+      alert('Option with this name already exists.');
+      return;
+    }
+
+    // Save config
+    fieldsConfig[key] = selectedFields;
+
+    // Add to dropdown
+    const newOption = document.createElement('option');
+    newOption.value = key;
+    newOption.textContent = `${name} (${selectedFields.length} fields)`;
+    dropdown.appendChild(newOption);
+
+    // Clear inputs
+    optionNameInput.value = '';
+    checkboxes.forEach(chk => chk.checked = false);
+
+    // Auto select new option
+    dropdown.value = key;
+    dropdown.dispatchEvent(new Event('change'));
+  });
+</script>
+
+</body>
+</html>

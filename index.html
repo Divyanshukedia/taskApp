@@ -2801,11 +2801,11 @@
                         const followUpDateStr = formatDate(followUpDateObj);
                         const tasksOnFollowUpDate = tasks[followUpDateStr] || [];
                         const hasExistingFollowUp = tasksOnFollowUpDate.some(t => t.followUpFrom);
-                        if (hasExistingFollowUp) {
-                            alert('A follow-up task already exists on the selected date. Please choose a different date.');
-                            hideLoading('#saveFollowUpBtn');
-                            return;
-                        }
+                        // if (hasExistingFollowUp) {
+                        //     alert('A follow-up task already exists on the selected date. Please choose a different date.');
+                        //     hideLoading('#saveFollowUpBtn');
+                        //     return;
+                        // }
                     }
 
                     let attachmentData = null;
